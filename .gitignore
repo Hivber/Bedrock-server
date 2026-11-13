@@ -1,0 +1,34 @@
+/target/
+.env
+*.swp
+*.swo
+*~
+.idea/
+.vscode/
+*.log
+.claude/
+.codex/
+worlds/
+players/
+plugin_data/
+.reference/
+tools/
+.tmp/
+webui.db
+webui.db-journal
+webui.db-wal
+webui.db-shm
+WEBUI_ACCESS.md
+.obsidian/
+
+# Dump binaire des paquets émis (MCRS_DUMP_PACKETS=full)
+pkt_sent.bin
+
+# État runtime du serveur (ops, bans), créé au premier lancement
+server-state.json
+
+# Outil de capture compilé
+scripts/dev/bds_capture/bds-capture.exe
+
+# Python
+__pycache__/

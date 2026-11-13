@@ -1,0 +1,460 @@
+//! Entités passives non-mobs — port de `.reference/PocketMine-MP/src/entity/object/*`.
+//!
+//! Contient :
+//! - `PrimedTntEntity` (fuse 80 ticks, explosion au bout, physique gravité/drag)
+//! - `FallingBlockEntity` (gravité jusqu'à collision sol, devient bloc solide)
+//! - `ExperienceOrbEntity` (attirée vers joueur proche, donne de l'XP au ramassage)
+//!
+//! Chaque entité porte un `entity_runtime_id` unique. La boucle principale
+//! (`main.rs`) itère ces entités chaque tick pour les broadcast aux joueurs
+//! via `AddActor` / `MoveActorAbsolute` / `RemoveActor`.
+
+use std::collections::HashMap;
+
+// ── Physics / gravity constants (PMMP) ──────────────────────────────────────
+
+pub const DEFAULT_GRAVITY: f32 = 0.04;
+pub const DEFAULT_DRAG: f32 = 0.02;
+pub const TNT_FUSE_DEFAULT: u32 = 80; // 80 ticks ≈ 4s
+pub const TNT_RADIUS: f32 = 4.0;
+pub const XP_ORB_DESPAWN_TICKS: u32 = 6000; // 5 min @ 20 TPS
+pub const XP_ORB_PICKUP_RANGE: f32 = 1.425; // PMMP `ExperienceOrb::PICKUP_RANGE`
+pub const XP_ORB_ATTRACT_RANGE: f32 = 8.0;
+pub const FALLING_BLOCK_MAX_AGE: u32 = 600; // 30s
+
+// ── PrimedTNT ───────────────────────────────────────────────────────────────
+
+/// Port de `.reference/PocketMine-MP/src/entity/object/PrimedTNT.php`.
+#[derive(Debug, Clone)]
+pub struct PrimedTntEntity {
+    pub entity_unique_id: i64,
+    pub entity_runtime_id: u64,
+    pub position: [f32; 3],
+    pub motion: [f32; 3],
+    pub fuse: u32,
+    pub age_ticks: u32,
+    pub works_underwater: bool,
+}
+
+impl PrimedTntEntity {
+    pub fn new(entity_unique_id: i64, entity_runtime_id: u64, position: [f32; 3]) -> Self {
+        Self {
+            entity_unique_id,
+            entity_runtime_id,
+            position,
+            // PMMP `Entity::tryChangeMovement()` : motion initial au spawn
+            // pour TNT = (rand*0.02-0.01, 0.2, rand*0.02-0.01). Ici on init à
+            // une motion nulle ; les callers peuvent set une motion custom.
+            motion: [0.0, 0.2, 0.0],
+            fuse: TNT_FUSE_DEFAULT,
+            age_ticks: 0,
+            works_underwater: false,
+        }
+    }
+
+    /// Tick physique + décrément fuse. Retourne `Some(explosion_position)` si
+    /// la TNT doit exploser ce tick.
+    pub fn tick(&mut self) -> Option<[f32; 3]> {
+        self.age_ticks = self.age_ticks.saturating_add(1);
+
+        // Physics : drag + gravity (PMMP `entityBaseTick` → `tryChangeMovement`).
+        self.motion[0] *= 1.0 - DEFAULT_DRAG;
+        self.motion[2] *= 1.0 - DEFAULT_DRAG;
+        self.motion[1] -= DEFAULT_GRAVITY;
+        self.position[0] += self.motion[0];
+        self.position[1] += self.motion[1];
+        self.position[2] += self.motion[2];
+
+        if self.fuse > 0 {
+            self.fuse -= 1;
+        }
+        if self.fuse == 0 {
+            return Some(self.position);
+        }
+        None
+    }
+}
+
+// ── FallingBlock ────────────────────────────────────────────────────────────
+
+/// Port de `.reference/PocketMine-MP/src/entity/object/FallingBlock.php`.
+#[derive(Debug, Clone)]
+pub struct FallingBlockEntity {
+    pub entity_unique_id: i64,
+    pub entity_runtime_id: u64,
+    pub position: [f32; 3],
+    pub motion: [f32; 3],
+    pub block_runtime_id: u32,
+    pub age_ticks: u32,
+}
+
+impl FallingBlockEntity {
+    pub fn new(
+        entity_unique_id: i64,
+        entity_runtime_id: u64,
+        position: [f32; 3],
+        block_runtime_id: u32,
+    ) -> Self {
+        Self {
+            entity_unique_id,
+            entity_runtime_id,
+            position,
+            motion: [0.0, 0.0, 0.0],
+            block_runtime_id,
+            age_ticks: 0,
+        }
+    }
+
+    /// Tick physique. Retourne `true` quand l'entité doit se figer en bloc
+    /// (`block_runtime_id` à placer à la position actuelle).
+    /// `is_block_at` est un closure permettant de tester si un bloc solide
+    /// est sous l'entité à une position donnée.
+    pub fn tick<F: Fn(i32, i32, i32) -> bool>(&mut self, is_block_at: F) -> bool {
+        self.age_ticks += 1;
+        if self.age_ticks > FALLING_BLOCK_MAX_AGE {
+            return true;
+        }
+        self.motion[1] -= DEFAULT_GRAVITY;
+        self.motion[1] *= 1.0 - DEFAULT_DRAG;
+        self.position[0] += self.motion[0];
+        self.position[1] += self.motion[1];
+        self.position[2] += self.motion[2];
+
+        // Collision sol : bloc solide un peu en dessous.
+        let feet = [
+            self.position[0].floor() as i32,
+            (self.position[1] - 0.05).floor() as i32,
+            self.position[2].floor() as i32,
+        ];
+        is_block_at(feet[0], feet[1], feet[2])
+    }
+}
+
+// ── ExperienceOrb ───────────────────────────────────────────────────────────
+
+/// Tailles d'orbes d'XP, de la plus grande à la plus petite (PMMP `ExperienceOrb::ORB_SPLIT_SIZES`).
+const ORB_SPLIT_SIZES: [u32; 11] = [2477, 1237, 617, 307, 149, 73, 37, 17, 7, 3, 1];
+
+/// Répartit une quantité d'XP en orbes (PMMP `ExperienceOrb::splitIntoOrbSizes`).
+pub fn split_into_orb_sizes(mut amount: u32) -> Vec<u32> {
+    let mut sizes = Vec::new();
+    while amount > 0 {
+        let size = ORB_SPLIT_SIZES
+            .into_iter()
+            .find(|&split| amount >= split)
+            .unwrap_or(1);
+        sizes.push(size);
+        amount -= size;
+    }
+    sizes
+}
+
+/// Port de `.reference/PocketMine-MP/src/entity/object/ExperienceOrb.php`.
+/// Stores XP reward + age. Attracted toward nearest player within range.
+#[derive(Debug, Clone)]
+pub struct ExperienceOrbEntity {
+    pub entity_unique_id: i64,
+    pub entity_runtime_id: u64,
+    pub position: [f32; 3],
+    pub motion: [f32; 3],
+    pub xp_value: u32,
+    pub age_ticks: u32,
+    /// Entity runtime ID du joueur qui va ramasser (set quand un joueur est à
+    /// portée d'attraction). PMMP `ExperienceOrb::targetPlayerRuntimeId`.
+    pub target_player_runtime_id: Option<u64>,
+}
+
+impl ExperienceOrbEntity {
+    pub fn new(
+        entity_unique_id: i64,
+        entity_runtime_id: u64,
+        position: [f32; 3],
+        xp_value: u32,
+    ) -> Self {
+        Self {
+            entity_unique_id,
+            entity_runtime_id,
+            position,
+            motion: [0.0, 0.0, 0.0],
+            xp_value,
+            age_ticks: 0,
+            target_player_runtime_id: None,
+        }
+    }
+
+    /// Tick. Retourne `PickupResult::Pickup(player_id, xp_amount)` si
+    /// le joueur le ramasse ce tick, `PickupResult::Despawn` si âge max,
+    /// sinon `None`.
+    /// `find_closest_player` retourne (runtime_id, distance, player_pos) du
+    /// joueur le plus proche à moins de `XP_ORB_ATTRACT_RANGE`.
+    pub fn tick<F>(&mut self, find_closest_player: F) -> OrbTickResult
+    where
+        F: Fn([f32; 3]) -> Option<(u64, f32, [f32; 3])>,
+    {
+        self.age_ticks += 1;
+        if self.age_ticks > XP_ORB_DESPAWN_TICKS {
+            return OrbTickResult::Despawn;
+        }
+
+        // Attraction vers le joueur le plus proche.
+        if let Some((pid, dist, ppos)) = find_closest_player(self.position) {
+            if dist < XP_ORB_PICKUP_RANGE {
+                return OrbTickResult::Pickup(pid, self.xp_value);
+            }
+            self.target_player_runtime_id = Some(pid);
+            // Vecteur vers le joueur normalisé puis * 0.1.
+            let dx = ppos[0] - self.position[0];
+            let dy = ppos[1] - self.position[1];
+            let dz = ppos[2] - self.position[2];
+            let len = (dx * dx + dy * dy + dz * dz).sqrt().max(0.001);
+            let factor = (1.0 - dist / XP_ORB_ATTRACT_RANGE).max(0.0) * 0.1;
+            self.motion[0] = dx / len * factor;
+            self.motion[1] = dy / len * factor;
+            self.motion[2] = dz / len * factor;
+        } else {
+            self.target_player_runtime_id = None;
+            // Gravity only.
+            self.motion[0] *= 1.0 - DEFAULT_DRAG;
+            self.motion[2] *= 1.0 - DEFAULT_DRAG;
+            self.motion[1] -= DEFAULT_GRAVITY;
+        }
+        self.position[0] += self.motion[0];
+        self.position[1] += self.motion[1];
+        self.position[2] += self.motion[2];
+        OrbTickResult::Live
+    }
+
+    /// `AddActor` de l'orbe : type `minecraft:xp_orb` + valeur d'XP en metadata
+    /// `EXPERIENCE_VALUE` (clé 15, Int) — comme PMMP `ExperienceOrb`. Diffusé à
+    /// l'apparition.
+    pub fn add_actor_packet(&self) -> Vec<u8> {
+        use mc_rs_proto::packets::player::{AddActor, MetadataValue};
+        AddActor {
+            entity_unique_id: self.entity_unique_id,
+            entity_runtime_id: self.entity_runtime_id,
+            actor_type: "minecraft:xp_orb".to_string(),
+            position: self.position,
+            velocity: self.motion,
+            pitch: 0.0,
+            yaw: 0.0,
+            head_yaw: 0.0,
+            body_yaw: 0.0,
+            attributes: Vec::new(),
+            metadata: vec![
+                (0, 7, MetadataValue::Long(0)),                    // flags
+                (38, 3, MetadataValue::Float(1.0)),                // scale
+                (53, 3, MetadataValue::Float(0.25)),               // largeur hitbox
+                (54, 3, MetadataValue::Float(0.25)),               // hauteur hitbox
+                (15, 2, MetadataValue::Int(self.xp_value as i32)), // EXPERIENCE_VALUE
+            ],
+        }
+        .encode()
+    }
+
+    /// `MoveActorAbsolute` (position streamée chaque tick pendant l'attraction).
+    pub fn move_absolute_packet(&self) -> Vec<u8> {
+        use mc_rs_proto::packets::player::MoveActorAbsolute;
+        MoveActorAbsolute {
+            runtime_entity_id: self.entity_runtime_id,
+            position: self.position,
+            pitch: 0.0,
+            yaw: 0.0,
+            head_yaw: 0.0,
+            flags: 0,
+        }
+        .encode()
+    }
+
+    /// `RemoveEntity` (ramassage / expiration).
+    pub fn remove_packet(&self) -> Vec<u8> {
+        use mc_rs_proto::packets::player::RemoveEntity;
+        RemoveEntity {
+            entity_unique_id: self.entity_unique_id,
+        }
+        .encode()
+    }
+}
+
+pub enum OrbTickResult {
+    Live,
+    Pickup(u64, u32),
+    Despawn,
+}
+
+/// Résultat d'un tick des orbes d'XP du manager.
+#[derive(Default)]
+pub struct XpOrbTick {
+    /// `(unique_id, position, move_packet)` des orbes vivantes.
+    pub movements: Vec<(i64, [f32; 3], Vec<u8>)>,
+    /// `(player_runtime_id, xp, unique_id, remove_packet)` des ramassages.
+    pub pickups: Vec<(u64, u32, i64, Vec<u8>)>,
+    /// `(unique_id, remove_packet)` des orbes expirées.
+    pub despawns: Vec<(i64, Vec<u8>)>,
+}
+
+// ── Manager — stocke les 3 types dans un état partagé ───────────────────────
+
+/// Manager qui regroupe toutes les passives entities d'un monde.
+#[derive(Default)]
+pub struct PassiveEntityManager {
+    pub tnt: HashMap<u64, PrimedTntEntity>,
+    pub falling_blocks: HashMap<u64, FallingBlockEntity>,
+    pub xp_orbs: HashMap<u64, ExperienceOrbEntity>,
+}
+
+impl PassiveEntityManager {
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    pub fn spawn_tnt(&mut self, entity: PrimedTntEntity) -> u64 {
+        let id = entity.entity_runtime_id;
+        self.tnt.insert(id, entity);
+        id
+    }
+
+    pub fn spawn_falling_block(&mut self, entity: FallingBlockEntity) -> u64 {
+        let id = entity.entity_runtime_id;
+        self.falling_blocks.insert(id, entity);
+        id
+    }
+
+    pub fn spawn_xp_orb(&mut self, entity: ExperienceOrbEntity) -> u64 {
+        let id = entity.entity_runtime_id;
+        self.xp_orbs.insert(id, entity);
+        id
+    }
+
+    pub fn remove(&mut self, runtime_id: u64) {
+        self.tnt.remove(&runtime_id);
+        self.falling_blocks.remove(&runtime_id);
+        self.xp_orbs.remove(&runtime_id);
+    }
+
+    /// Tick des orbes d'XP : attraction vers le joueur proche, ramassage,
+    /// expiration. `find_closest(pos)` renvoie `(runtime_id, distance, position)`
+    /// du joueur le plus proche dans le rayon d'attraction (ou `None`).
+    pub fn tick_xp_orbs<F>(&mut self, find_closest: F) -> XpOrbTick
+    where
+        F: Fn([f32; 3]) -> Option<(u64, f32, [f32; 3])> + Copy,
+    {
+        let mut out = XpOrbTick::default();
+        let mut to_remove = Vec::new();
+        for (rid, orb) in self.xp_orbs.iter_mut() {
+            match orb.tick(find_closest) {
+                OrbTickResult::Live => {
+                    out.movements.push((
+                        orb.entity_unique_id,
+                        orb.position,
+                        orb.move_absolute_packet(),
+                    ));
+                }
+                OrbTickResult::Pickup(pid, xp) => {
+                    out.pickups
+                        .push((pid, xp, orb.entity_unique_id, orb.remove_packet()));
+                    to_remove.push(*rid);
+                }
+                OrbTickResult::Despawn => {
+                    out.despawns
+                        .push((orb.entity_unique_id, orb.remove_packet()));
+                    to_remove.push(*rid);
+                }
+            }
+        }
+        for rid in to_remove {
+            self.xp_orbs.remove(&rid);
+        }
+        out
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn xp_splits_like_pmmp() {
+        assert_eq!(super::split_into_orb_sizes(7), vec![7]);
+        assert_eq!(super::split_into_orb_sizes(5), vec![3, 1, 1]);
+        assert_eq!(super::split_into_orb_sizes(43), vec![37, 3, 3]);
+        assert!(super::split_into_orb_sizes(0).is_empty());
+    }
+
+    use super::*;
+
+    #[test]
+    fn tnt_explodes_after_fuse() {
+        let mut tnt = PrimedTntEntity::new(1, 1, [0.0, 64.0, 0.0]);
+        // 80 ticks fuse. Tick 80 fois.
+        let mut exploded_pos = None;
+        for _ in 0..80 {
+            if let Some(pos) = tnt.tick() {
+                exploded_pos = Some(pos);
+                break;
+            }
+        }
+        assert!(
+            exploded_pos.is_some(),
+            "TNT should have exploded by tick 80"
+        );
+    }
+
+    #[test]
+    fn xp_orb_despawns() {
+        let mut orb = ExperienceOrbEntity::new(1, 1, [0.0, 64.0, 0.0], 5);
+        let nop = |_pos: [f32; 3]| None;
+        let mut despawned = false;
+        for _ in 0..(XP_ORB_DESPAWN_TICKS + 1) {
+            if matches!(orb.tick(nop), OrbTickResult::Despawn) {
+                despawned = true;
+                break;
+            }
+        }
+        assert!(despawned);
+    }
+
+    #[test]
+    fn xp_orb_picked_up_when_player_near() {
+        let mut orb = ExperienceOrbEntity::new(1, 1, [0.0, 64.0, 0.0], 7);
+        let near = |pos: [f32; 3]| {
+            // joueur à distance 0.5
+            Some((42u64, 0.5, [pos[0] + 0.5, pos[1], pos[2]]))
+        };
+        match orb.tick(near) {
+            OrbTickResult::Pickup(pid, xp) => {
+                assert_eq!(pid, 42);
+                assert_eq!(xp, 7);
+            }
+            _ => panic!("expected pickup"),
+        }
+    }
+
+    #[test]
+    fn manager_ticks_orbs_and_routes_pickup() {
+        let mut mgr = PassiveEntityManager::new();
+        let orb = ExperienceOrbEntity::new(1, 1, [0.0, 64.0, 0.0], 7);
+        // Les 3 paquets réseau se construisent.
+        assert!(!orb.add_actor_packet().is_empty());
+        assert!(!orb.move_absolute_packet().is_empty());
+        assert!(!orb.remove_packet().is_empty());
+        mgr.spawn_xp_orb(orb);
+        // Joueur adjacent → ramassage routé par le manager, orbe retirée.
+        let out = mgr.tick_xp_orbs(|_pos| Some((42u64, 0.5, [0.0, 64.0, 0.0])));
+        assert_eq!(out.pickups.len(), 1);
+        assert_eq!(out.pickups[0].0, 42, "runtime id du joueur");
+        assert_eq!(out.pickups[0].1, 7, "valeur d'XP");
+        assert!(mgr.xp_orbs.is_empty(), "orbe retirée après ramassage");
+    }
+
+    #[test]
+    fn falling_block_lands_when_ground_below() {
+        let mut fb = FallingBlockEntity::new(1, 1, [0.5, 65.0, 0.5], 1);
+        let has_ground = |_x: i32, y: i32, _z: i32| y < 64;
+        let mut landed = false;
+        for _ in 0..100 {
+            if fb.tick(has_ground) {
+                landed = true;
+                break;
+            }
+        }
+        assert!(landed);
+    }
+}

@@ -1,0 +1,26 @@
+{
+  "formatVersion": 1,
+  "id": "square_image",
+  "name": "Square image",
+  "form": {
+    "layout": "square_image",
+    "title": "§6Square image",
+    "content": "§7Affichage central d'une image carrée avec description en bas.",
+    "buttons": [
+      {
+        "id": "image",
+        "text": "image",
+        "role": "banner",
+        "icon": {
+          "path": "textures/ui/mcrs/panels/loading_grid"
+        },
+        "onClick": [
+          {
+            "type": "open",
+            "menu": "showcase"
+          }
+        ]
+      }
+    ]
+  }
+}

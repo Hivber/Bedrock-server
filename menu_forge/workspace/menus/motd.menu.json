@@ -1,0 +1,46 @@
+{
+  "formatVersion": 1,
+  "id": "motd",
+  "name": "MOTD",
+  "form": {
+    "layout": "motd",
+    "title": "§6MOTD",
+    "content": "§7Bienvenue sur mc-rs.\n§7Le serveur Minecraft Bedrock le plus rapide écrit en Rust.\n\n§eAppuie sur un bouton pour continuer.",
+    "buttons": [
+      {
+        "id": "banner",
+        "text": "Banner",
+        "role": "banner",
+        "icon": {
+          "path": "textures/ui/mcrs/panels/loading_grid"
+        },
+        "onClick": [
+          {
+            "type": "open",
+            "menu": "showcase"
+          }
+        ]
+      },
+      {
+        "id": "continue",
+        "text": "§eContinuer",
+        "onClick": [
+          {
+            "type": "open",
+            "menu": "showcase"
+          }
+        ]
+      },
+      {
+        "id": "quit",
+        "text": "§cQuitter",
+        "onClick": [
+          {
+            "type": "open",
+            "menu": "showcase"
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -1,0 +1,96 @@
+pub mod chunks;
+pub mod dimension;
+pub mod forms;
+pub mod login;
+pub mod player;
+pub mod world;
+
+/// Packet IDs for Minecraft Bedrock protocol version 924.
+pub mod packet_id {
+    pub const LOGIN: u32 = 0x01;
+    pub const PLAY_STATUS: u32 = 0x02;
+    pub const SERVER_TO_CLIENT_HANDSHAKE: u32 = 0x03;
+    pub const CLIENT_TO_SERVER_HANDSHAKE: u32 = 0x04;
+    pub const DISCONNECT: u32 = 0x05;
+    pub const RESOURCE_PACKS_INFO: u32 = 0x06;
+    pub const RESOURCE_PACK_STACK: u32 = 0x07;
+    pub const RESOURCE_PACK_CLIENT_RESPONSE: u32 = 0x08;
+    pub const RESOURCE_PACK_DATA_INFO: u32 = 0x52;
+    pub const RESOURCE_PACK_CHUNK_DATA: u32 = 0x53;
+    pub const RESOURCE_PACK_CHUNK_REQUEST: u32 = 0x54;
+    pub const MODAL_FORM_REQUEST: u32 = 0x64;
+    pub const MODAL_FORM_RESPONSE: u32 = 0x65;
+    pub const TEXT: u32 = 0x09;
+    pub const SET_TIME: u32 = 0x0A;
+    pub const START_GAME: u32 = 0x0B;
+    pub const ADD_PLAYER: u32 = 0x0C;
+    pub const ADD_ACTOR: u32 = 0x0D;
+    pub const REMOVE_ACTOR: u32 = 0x0E;
+    pub const ADD_ITEM_ACTOR: u32 = 0x0F;
+    pub const TAKE_ITEM_ACTOR: u32 = 0x11;
+    pub const MOVE_ACTOR_ABSOLUTE: u32 = 0x12;
+    pub const MOVE_PLAYER: u32 = 0x13;
+    pub const UPDATE_BLOCK: u32 = 0x15;
+    pub const UPDATE_ATTRIBUTES: u32 = 0x1D;
+    pub const MOB_EFFECT: u32 = 0x1C;
+    pub const BLOCK_ACTOR_DATA: u32 = 0x38;
+    pub const INVENTORY_TRANSACTION: u32 = 0x1E;
+    pub const SET_ACTOR_DATA: u32 = 0x27;
+    pub const SET_ACTOR_MOTION: u32 = 0x28;
+    pub const SET_PLAYER_GAME_TYPE: u32 = 0x3E;
+    pub const CHANGE_DIMENSION: u32 = 0x3D;
+    pub const SET_SPAWN_POSITION: u32 = 0x2B;
+    pub const CRAFTING_DATA: u32 = 0x34;
+    pub const LEVEL_CHUNK: u32 = 0x3A;
+    pub const SET_DIFFICULTY: u32 = 0x3C;
+    pub const PLAYER_LIST: u32 = 0x3F;
+    pub const REQUEST_CHUNK_RADIUS: u32 = 0x45;
+    pub const CHUNK_RADIUS_UPDATED: u32 = 0x46;
+    pub const AVAILABLE_ACTOR_IDENTIFIERS: u32 = 0x77;
+    pub const NETWORK_CHUNK_PUBLISHER_UPDATE: u32 = 0x79;
+    pub const BIOME_DEFINITION_LIST: u32 = 0x7A;
+    pub const NETWORK_SETTINGS: u32 = 0x8F;
+    pub const PLAYER_AUTH_INPUT: u32 = 0x90;
+    pub const PLAYER_ACTION: u32 = 0x24;
+    pub const CREATIVE_CONTENT: u32 = 0x91;
+    pub const UPDATE_ABILITIES: u32 = 0xBB;
+    pub const UPDATE_ADVENTURE_SETTINGS: u32 = 0xBC;
+    pub const EMOTE_LIST: u32 = 0x98;
+    pub const SET_LOCAL_PLAYER_AS_INITIALIZED: u32 = 0x71;
+    pub const REQUEST_NETWORK_SETTINGS: u32 = 0xC1;
+    pub const ITEM_REGISTRY: u32 = 0xA2;
+    pub const AVAILABLE_COMMANDS: u32 = 0x4C;
+    pub const COMMAND_REQUEST: u32 = 0x4D;
+    pub const TRANSFER: u32 = 0x55;
+    pub const SET_TITLE: u32 = 0x58;
+    pub const MOB_EQUIPMENT: u32 = 0x1F;
+    pub const INVENTORY_CONTENT: u32 = 0x31;
+    pub const INVENTORY_SLOT: u32 = 0x32;
+    pub const LEVEL_EVENT: u32 = 0x19;
+    pub const INTERACT: u32 = 0x21;
+    pub const LEVEL_SOUND_EVENT: u32 = 0x7B;
+    pub const ANIMATE: u32 = 0x2C;
+    pub const CONTAINER_OPEN: u32 = 0x2E;
+    pub const CONTAINER_CLOSE: u32 = 0x2F;
+    pub const ITEM_STACK_RESPONSE: u32 = 0x94;
+    pub const SERVERBOUND_LOADING_SCREEN: u32 = 0x138;
+    // Visuels
+    pub const SPAWN_PARTICLE_EFFECT: u32 = 0x76;
+    pub const BOSS_EVENT: u32 = 0x4A;
+    pub const SET_ACTOR_LINK: u32 = 0x29;
+    // Entity events (hurt, death, etc.)
+    pub const ACTOR_EVENT: u32 = 0x1B;
+    pub const RESPAWN: u32 = 0x2D;
+    pub const GAME_RULES_CHANGED: u32 = 0x48;
+    pub const PLAY_SOUND: u32 = 0x56;
+    pub const STOP_SOUND: u32 = 0x57;
+    /// Options d'affichage du four choisies par le joueur (2193, C→S et S→C ;
+    /// gophertunnel `IDSetPlayerFurnaceOptions`, Cloudburst ID 351).
+    pub const SET_PLAYER_FURNACE_OPTIONS: u32 = 0x15F;
+    /// Garnitures d'armure (gophertunnel `IDTrimData` = 302).
+    pub const TRIM_DATA: u32 = 0x12E;
+    /// Structures jigsaw (gophertunnel `IDJigsawStructureData` = 313).
+    pub const JIGSAW_STRUCTURE_DATA: u32 = 0x139;
+    /// Formes de blocs (gophertunnel `IDVoxelShapes` = 337).
+    pub const VOXEL_SHAPES: u32 = 0x151;
+}

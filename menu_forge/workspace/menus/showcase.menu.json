@@ -1,0 +1,102 @@
+{
+  "formatVersion": 1,
+  "id": "showcase",
+  "name": "UI Showcase",
+  "form": {
+    "layout": "grid",
+    "title": "§l§6UI§r §eShowcase",
+    "content": "§7Sélectionne le layout à afficher :",
+    "buttons": [
+      {
+        "id": "open_grid",
+        "text": "§e▶ Grid §7(button_grid)",
+        "onClick": [
+          {
+            "type": "open",
+            "menu": "grid"
+          }
+        ]
+      },
+      {
+        "id": "open_left_button",
+        "text": "§e▶ Left buttons §7(left_button)",
+        "onClick": [
+          {
+            "type": "open",
+            "menu": "left_button"
+          }
+        ]
+      },
+      {
+        "id": "open_bottom_button",
+        "text": "§e▶ Bottom buttons §7(bottom_button)",
+        "onClick": [
+          {
+            "type": "open",
+            "menu": "bottom_button"
+          }
+        ]
+      },
+      {
+        "id": "open_image_grid",
+        "text": "§e▶ Image grid §7(image_grid)",
+        "onClick": [
+          {
+            "type": "open",
+            "menu": "image_grid"
+          }
+        ]
+      },
+      {
+        "id": "open_square_image",
+        "text": "§e▶ Square image §7(square_image)",
+        "onClick": [
+          {
+            "type": "open",
+            "menu": "square_image"
+          }
+        ]
+      },
+      {
+        "id": "open_motd",
+        "text": "§e▶ MOTD §7(motd)",
+        "onClick": [
+          {
+            "type": "open",
+            "menu": "motd"
+          }
+        ]
+      },
+      {
+        "id": "open_store",
+        "text": "§e▶ Store §7(store)",
+        "onClick": [
+          {
+            "type": "open",
+            "menu": "store"
+          }
+        ]
+      },
+      {
+        "id": "open_wrapped",
+        "text": "§e▶ Wrapped §7(wrapped)",
+        "onClick": [
+          {
+            "type": "open",
+            "menu": "wrapped"
+          }
+        ]
+      },
+      {
+        "id": "back",
+        "text": "§c↩ Retour",
+        "onClick": [
+          {
+            "type": "open",
+            "menu": "hub"
+          }
+        ]
+      }
+    ]
+  }
+}

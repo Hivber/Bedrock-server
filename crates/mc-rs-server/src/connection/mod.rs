@@ -1,0 +1,777 @@
+mod block_breaking;
+mod buckets;
+mod chat;
+mod chunks;
+mod dimension;
+mod forms;
+// Anciens formulaires de /menu : référence des tests de parité du moteur Menu Forge.
+#[cfg(test)]
+pub(crate) use forms::{legacy_click, legacy_form, LegacyClick};
+mod inventory;
+mod login;
+mod menu_forge;
+mod movement;
+mod spawn;
+
+use std::collections::{HashSet, VecDeque};
+use std::net::SocketAddr;
+use std::sync::{Arc, Mutex};
+
+use tracing::{debug, info, warn};
+
+use mc_rs_crypto::ecdh::ServerKeyPair;
+use mc_rs_crypto::encrypt::EncryptionContext;
+use mc_rs_proto::batch::{self, CompressionAlgorithm};
+use mc_rs_proto::codec;
+use mc_rs_proto::io::ProtoReader;
+use mc_rs_proto::packets::packet_id;
+
+use crate::attribute::{AttributeMap, HungerManager};
+use crate::combat::CombatState;
+use crate::config::ConnectionConfig;
+use crate::event::EventManager;
+use crate::inventory::PlayerInventory;
+use crate::inventory_manager::InventoryManager;
+use crate::item_entities::PendingItemEntitySpawn;
+use crate::player_registry;
+use crate::world::chunk_cache::ChunkCache;
+
+/// Connection state for a single player.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[allow(dead_code)]
+pub enum ConnectionState {
+    SessionStart,
+    Login,
+    Handshake,
+    ResourcePacks,
+    PreSpawn,
+    SpawnResponse,
+    InGame,
+}
+
+pub(super) const CHUNKS_PER_TICK: usize = 4;
+pub(super) const PLAYER_INVENTORY_SCREEN_ID: u8 = 1;
+pub(super) const PLAYER_INVENTORY_WINDOW_TYPE: u8 = 0xFF;
+
+/// Convertit le mode de jeu interne (`Connection::gamemode` : 0 survie,
+/// 1 créatif, 2 aventure, 3 spectateur) en valeur `GameType` du protocole.
+///
+/// Seul point de passage pour tout `GameType` écrit sur le fil
+/// (SetPlayerGameType, StartGame joueur et monde, AddPlayer). L'enum 2169 ne
+/// contient plus que -1 Undefined, 0 Survival, 1 Creative, 2 Adventure,
+/// 5 Default et 6 Spectator : les anciens 3/4 (SURVIVAL_VIEWER /
+/// CREATIVE_VIEWER) ont disparu, envoyer notre 3 interne serait invalide.
+///
+/// Choix : on suit PMMP `TypeConverter::coreGameModeToProtocol`, qui envoie le
+/// spectateur comme CREATIVE (1) ; le comportement spectateur passe par
+/// UpdateAbilities (`default_spectator`) et SetActorData. Le Spectator natif
+/// (6) n'est pas utilisé, PMMP ne le gère pas non plus (« TODO: native
+/// spectator support »). Valeur inconnue : survie par prudence.
+pub fn protocol_game_type(internal_game_mode: i32) -> i32 {
+    const SURVIVAL: i32 = 0;
+    const CREATIVE: i32 = 1;
+    const ADVENTURE: i32 = 2;
+    match internal_game_mode {
+        1 | 3 => CREATIVE,
+        2 => ADVENTURE,
+        _ => SURVIVAL,
+    }
+}
+
+#[cfg(test)]
+mod game_type_tests {
+    use super::protocol_game_type;
+
+    #[test]
+    fn maps_internal_modes_like_pmmp() {
+        assert_eq!(protocol_game_type(0), 0);
+        assert_eq!(protocol_game_type(1), 1);
+        assert_eq!(protocol_game_type(2), 2);
+        // Spectateur → CREATIVE (PMMP), jamais 3/4 (absents de l'enum 2169).
+        assert_eq!(protocol_game_type(3), 1);
+        assert_eq!(protocol_game_type(42), 0);
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct PendingEntityAttack {
+    pub target_runtime_id: u64,
+    pub action_type: u32,
+}
+
+/// Event poussé par Connection quand un bloc de type furnace est placé ou
+/// cassé ; main.rs consomme ces events pour register/unregister dans le
+/// FurnaceManager server-wide.
+#[derive(Debug, Clone)]
+pub enum PendingFurnaceEvent {
+    Register {
+        pos: (i32, i32, i32),
+        kind: crate::furnace::FurnaceKind,
+    },
+    Unregister {
+        pos: (i32, i32, i32),
+    },
+}
+
+/// BlockActorData reçu du client (sign edit, item_frame, etc.). main.rs
+/// décide quoi faire selon le type de bloc à `position` (sign → SignManager,
+/// item_frame → ItemFrameManager, etc.).
+#[derive(Debug, Clone)]
+pub struct PendingBlockActorUpdate {
+    pub position: (i32, i32, i32),
+    pub nbt: Vec<u8>,
+}
+
+/// Right-click sur un bloc qui ouvre une UI (crafting table, anvil, etc.).
+/// main.rs envoie ContainerOpen avec window_type approprié.
+#[derive(Debug, Clone)]
+pub enum PendingBlockUiOpen {
+    CraftingTable { pos: (i32, i32, i32) },
+    Anvil { pos: (i32, i32, i32) },
+    Enchanting { pos: (i32, i32, i32) },
+    Furnace { pos: (i32, i32, i32) },
+}
+
+/// Manages a single client connection's protocol state machine.
+pub struct Connection {
+    pub addr: SocketAddr,
+    pub state: ConnectionState,
+    pub encryption: Option<EncryptionContext>,
+    /// Encryption key waiting to be activated AFTER current batch is sent.
+    pub(super) pending_encryption_key: Option<[u8; 32]>,
+    pub compression_algo: CompressionAlgorithm,
+
+    // Player identity (set after login)
+    pub display_name: Option<String>,
+    pub uuid: Option<uuid::Uuid>,
+    pub xuid: Option<String>,
+    pub(super) client_pub_key_b64: Option<String>,
+    /// Skin parsée depuis le `client_data_jwt` au login. `None` si offline ou
+    /// parse échoué — le broadcast tombe alors sur `SerializedSkin::default`.
+    pub skin: Option<crate::skins::Skin>,
+
+    // Player state
+    pub spawn_position: [f32; 3],
+    pub position: [f32; 3],
+    pub pitch: f32,
+    pub yaw: f32,
+    pub head_yaw: f32,
+    pub entity_runtime_id: u64,
+    pub tick: u64,
+    pub gamemode: i32, // 0=survival, 1=creative, 2=adventure, 3=spectator
+    pub(super) world_gamemode: i32,
+    pub(super) current_difficulty: i32,
+    /// Règles de jeu à la connexion, envoyées dans StartGame (les changements
+    /// ultérieurs passent par GameRulesChanged).
+    pub(super) game_rules: crate::game_rules::GameRules,
+    pub is_op: bool,
+
+    // Chunk tracking
+    pub sent_chunks: HashSet<(i32, i32)>,
+    pub view_distance: i32,
+    pub last_chunk_x: i32,
+    pub last_chunk_z: i32,
+    /// Entity culling — entity_unique_ids actuellement visibles par ce joueur.
+    /// Voir `entity_culling.rs`. Sert à émettre Add/Remove sur traversée de
+    /// frontière de vue, et à filtrer les broadcasts Move/Motion.
+    pub visible_entities: HashSet<i64>,
+    /// Tags attachés à ce joueur via /tag (vanilla `Tags` NBT). Persistés
+    /// tant que la connexion reste ouverte — pas encore sauvegardés en
+    /// player_data.json.
+    pub tags: HashSet<String>,
+    /// Queue of chunks to send, ordered by distance (nearest first).
+    pub chunk_load_queue: VecDeque<(i32, i32)>,
+    /// Countdown ticks until chunk reorder. 0 = reorder now. u32::MAX = idle.
+    pub chunk_order_countdown: u32,
+
+    // Packets to broadcast to ALL other players (PMMP-style outgoing buffer).
+    // Stocké en `(packet_id, raw_payload)` non-compressé pour permettre à la
+    // main loop de coalescer tous les paquets du tick en UN seul batch
+    // compressé par destinataire (1 zlib au lieu de N).
+    pub broadcasts: Vec<(u32, Vec<u8>)>,
+
+    pub pending_commands: Vec<String>,
+    pub pending_item_spawns: Vec<PendingItemEntitySpawn>,
+    /// XP rendue par les blocs cassés (position, points), répartie en orbes par `main.rs`.
+    pub pending_xp_drops: Vec<([f32; 3], u32)>,
+    pub pending_entity_attacks: Vec<PendingEntityAttack>,
+    pub pending_furnace_events: Vec<PendingFurnaceEvent>,
+    /// Right-click sur chest queue ici, processé par main.rs (qui a accès
+    /// au ChestManager partagé).
+    pub pending_chest_open: Option<(i32, i32, i32)>,
+    pub pending_block_ui_open: Option<PendingBlockUiOpen>,
+    /// Position du chest actuellement ouvert par ce joueur (pour synchroniser
+    /// les ItemStackRequest avec ChestManager au close).
+    pub open_chest_pos: Option<(i32, i32, i32)>,
+    /// BlockActorData (sign edit, item_frame, etc.) reçu du client. main.rs
+    /// décode + persiste dans SignManager + broadcast.
+    pub pending_block_actor_updates: Vec<PendingBlockActorUpdate>,
+
+    // Server-driven Bedrock forms
+    pub(super) next_form_id: u32,
+    /// Form actuellement en attente d'une `ModalFormResponse` du client.
+    /// `None` quand aucun form n'a été envoyé ou que la réponse a déjà été
+    /// consommée. Le form_id est tracké pour ignorer les réponses obsolètes.
+    pub(super) pending_form: Option<forms::PendingForm>,
+    /// Menus Menu Forge ouverts par ce joueur (pile, état), voir `connection/menu_forge.rs`.
+    pub(super) menu_forge_session: Option<crate::menu_forge::Session>,
+    /// Commandes à exécuter en console, poussées par une action `command` de
+    /// Menu Forge (`as: console`) ; `main.rs` les exécute comme `pending_commands`.
+    pub pending_console_commands: Vec<String>,
+
+    // Server keypair (shared across connections)
+    pub(super) server_keypair: std::sync::Arc<ServerKeyPair>,
+
+    // Player inventory
+    pub inventory: PlayerInventory,
+    pub(super) inventory_manager: InventoryManager,
+    pub(super) player_inventory_window_id: u8,
+    pub(super) player_inventory_open: bool,
+
+    // Player stats : attributs (santé, faim, XP), combat, hunger.
+    pub attributes: AttributeMap,
+    pub combat: CombatState,
+    pub hunger: HungerManager,
+    /// Horloge game-tick (20 TPS = 1 tick / 5 server-ticks).
+    pub(super) game_tick_accum: u64,
+
+    /// Y du pic pendant le fall en cours ; None si pas en chute.
+    pub(super) fall_peak_y: Option<f32>,
+
+    /// Player est mort (HEALTH=0) et attend l'action RESPAWN du client.
+    pub(super) dead: bool,
+
+    /// Réserve d'air en game ticks (15 sec = 300). Décrémentée quand les
+    /// yeux sont dans l'eau ; drowning damage quand = 0.
+    pub(super) air_supply: i32,
+
+    /// Compteur interne entre tick (drowning, lava) — incrémenté à chaque
+    /// tick_game_state, utilisé pour espacer les tics de dégâts.
+    pub(super) environment_tick: i32,
+
+    /// Position du dernier bloc attaqué (en cours de cassage). PMMP
+    /// `InGamePacketHandler::lastBlockAttacked` — permet d'ignorer les
+    /// CONTINUE_DESTROY_BLOCK spuriousement renvoyés par le client pour le
+    /// même bloc (bug client qui reset l'animation de crack).
+    pub(super) last_block_attacked: Option<[i32; 3]>,
+    /// Cassage en cours en survie (PMMP `Player::$blockBreakHandler`).
+    pub(super) block_break_handler: Option<block_breaking::BlockBreakHandler>,
+    /// Au sol, d'après le drapeau `VerticalCollision` de PlayerAuthInput (mc-rs ne calcule pas les
+    /// collisions du joueur ; PMMP : `Entity::checkGroundState`).
+    pub(super) on_ground: bool,
+
+    /// État sprint/sneak/swim — pour détecter les changements et broadcaster
+    /// SetActorData aux autres viewers. Bits PlayerAuthInputFlags::SPRINTING=20,
+    /// SNEAKING=8.
+    pub(super) is_sprinting: bool,
+    pub(super) is_sneaking: bool,
+    pub(super) is_swimming: bool,
+
+    // Event manager partagé (fire events pour plugins).
+    pub events: Arc<Mutex<EventManager>>,
+
+    // Cache de chunks de la **dimension courante** du joueur. Réassigné lors d'un
+    // transfert (DIM-D) vers `worlds.get(current_dimension)`, ce qui fait que tout le
+    // code chunk per-connexion opère automatiquement sur le bon monde.
+    pub(super) chunk_cache: Arc<Mutex<ChunkCache>>,
+
+    // Les 3 mondes (overworld/nether/end), partagés. Source pour router `chunk_cache`.
+    pub(super) worlds: crate::world::worlds::Worlds,
+
+    // Dimension courante du joueur (0=overworld, 1=nether, 2=end).
+    pub(super) current_dimension: i32,
+
+    // État portail Nether (timer "dans le portail" + cooldown anti-rebond).
+    pub(super) portal_state: crate::nether_portal::PortalState,
+
+    // Server config subset for this connection
+    pub(super) config: Arc<ConnectionConfig>,
+
+    /// Resource packs servis par le serveur — partagés entre toutes les
+    /// connexions. Annoncés dans `ResourcePacksInfo` + `ResourcePackStack`,
+    /// envoyés chunk-par-chunk sur `ResourcePackChunkRequest`.
+    pub(super) resource_packs: Arc<Vec<crate::resource_pack::ResourcePack>>,
+}
+
+impl Connection {
+    #[allow(clippy::too_many_arguments)]
+    pub fn new(
+        addr: SocketAddr,
+        server_keypair: std::sync::Arc<ServerKeyPair>,
+        worlds: crate::world::worlds::Worlds,
+        config: Arc<ConnectionConfig>,
+        world_spawn_override: Option<[f32; 3]>,
+        world_gamemode: i32,
+        current_difficulty: i32,
+        game_rules: crate::game_rules::GameRules,
+        is_op: bool,
+        events: Arc<Mutex<EventManager>>,
+        resource_packs: Arc<Vec<crate::resource_pack::ResourcePack>>,
+    ) -> Self {
+        // Le joueur démarre en overworld ; `chunk_cache` pointe sur ce monde.
+        let current_dimension = 0;
+        let chunk_cache = worlds.arc(current_dimension);
+        let spawn_position = world_spawn_override
+            .unwrap_or_else(|| spawn::find_spawn_position(&chunk_cache, config.world_seed));
+        let inventory = PlayerInventory::new();
+
+        Self {
+            addr,
+            state: ConnectionState::SessionStart,
+            encryption: None,
+            pending_encryption_key: None,
+            compression_algo: CompressionAlgorithm::Zlib,
+            display_name: None,
+            uuid: None,
+            xuid: None,
+            client_pub_key_b64: None,
+            skin: None,
+            spawn_position,
+            position: spawn_position,
+            pitch: 0.0,
+            yaw: 0.0,
+            head_yaw: 0.0,
+            entity_runtime_id: player_registry::next_entity_id() as u64,
+            tick: 0,
+            gamemode: config.default_gamemode,
+            world_gamemode,
+            current_difficulty,
+            game_rules,
+            is_op,
+            sent_chunks: HashSet::new(),
+            view_distance: config.max_view_distance,
+            last_chunk_x: 0,
+            last_chunk_z: 0,
+            visible_entities: HashSet::new(),
+            tags: HashSet::new(),
+            chunk_load_queue: VecDeque::new(),
+            chunk_order_countdown: 5, // reorder shortly after spawn (like PMMP)
+            broadcasts: Vec::new(),
+            pending_commands: Vec::new(),
+            pending_item_spawns: Vec::new(),
+            pending_xp_drops: Vec::new(),
+            pending_entity_attacks: Vec::new(),
+            pending_furnace_events: Vec::new(),
+            pending_chest_open: None,
+            pending_block_ui_open: None,
+            open_chest_pos: None,
+            pending_block_actor_updates: Vec::new(),
+            inventory,
+            inventory_manager: InventoryManager::new(),
+            player_inventory_window_id: PLAYER_INVENTORY_SCREEN_ID,
+            player_inventory_open: false,
+            attributes: AttributeMap::default_for_player(),
+            combat: CombatState::new(),
+            hunger: HungerManager::new(),
+            game_tick_accum: 0,
+            fall_peak_y: None,
+            dead: false,
+            air_supply: 300,
+            environment_tick: 0,
+            last_block_attacked: None,
+            block_break_handler: None,
+            on_ground: true,
+            is_sprinting: false,
+            is_sneaking: false,
+            is_swimming: false,
+            events,
+            next_form_id: 1,
+            pending_form: None,
+            menu_forge_session: None,
+            pending_console_commands: Vec::new(),
+            server_keypair,
+            chunk_cache,
+            worlds,
+            current_dimension,
+            portal_state: crate::nether_portal::PortalState::new(
+                crate::dimensions::DimensionId::Overworld,
+            ),
+            config,
+            resource_packs,
+        }
+    }
+
+    /// Handle a raw game packet (0xFE batch) from RakNet.
+    /// Returns a list of response batches to send back.
+    pub fn handle_raw_batch(&mut self, raw: &[u8]) -> Vec<Vec<u8>> {
+        if raw.is_empty() || raw[0] != 0xFE {
+            warn!("[{}] Invalid batch: missing 0xFE header", self.addr);
+            return Vec::new();
+        }
+
+        let payload = &raw[1..];
+
+        // Decrypt if encryption is active
+        let decrypted = if let Some(ref mut ctx) = self.encryption {
+            match ctx.decrypt(payload) {
+                Ok(data) => data,
+                Err(e) => {
+                    warn!("[{}] Decryption failed: {}", self.addr, e);
+                    return Vec::new();
+                }
+            }
+        } else {
+            payload.to_vec()
+        };
+
+        // Determine compression
+        let (algo_byte, compressed_data) = if decrypted.is_empty() {
+            return Vec::new();
+        } else if self.state == ConnectionState::SessionStart {
+            (CompressionAlgorithm::None, &decrypted[..])
+        } else {
+            let algo =
+                CompressionAlgorithm::from_u8(decrypted[0]).unwrap_or(CompressionAlgorithm::None);
+            (algo, &decrypted[1..])
+        };
+
+        // Decode batch
+        let packets = match batch::decode_batch(compressed_data, algo_byte) {
+            Ok(p) => p,
+            Err(e) => {
+                warn!("[{}] Batch decode failed: {}", self.addr, e);
+                return Vec::new();
+            }
+        };
+
+        // Process each packet
+        let mut responses = Vec::new();
+        for pkt_data in packets {
+            let mut reader = ProtoReader::new(&pkt_data);
+            let Ok((pkt_id, _, _)) = codec::decode_packet_header(&mut reader) else {
+                continue;
+            };
+
+            let response_packets = self.handle_packet(pkt_id, &mut reader);
+            for resp in response_packets {
+                responses.push(resp);
+            }
+        }
+
+        // PMMP `flushPendingUpdates` à la fin du traitement des paquets : envoie
+        // tout `pending_sync` queued par les listeners (block place,
+        // pickup-via-add_item, /give, etc.). Sans ça, les mutations server-side
+        // n'arrivent jamais au client.
+        if self.is_in_game() {
+            for pkt in self.tick_inventory_flush() {
+                responses.push(pkt);
+            }
+        }
+
+        responses
+    }
+
+    /// Handle a single decoded packet. Returns response packets to send.
+    fn handle_packet(&mut self, pkt_id: u32, reader: &mut ProtoReader) -> Vec<Vec<u8>> {
+        // DIAG : log TOUS les paquets reçus en état InGame. Désactivable plus
+        // tard en debug. Pour l'instant on cherche quel paquet le client
+        // envoie pour un placement de bloc (bit 34 jamais set dans
+        // PlayerAuthInput, block_action types tous break-related).
+        if self.state == ConnectionState::InGame && pkt_id != packet_id::PLAYER_AUTH_INPUT {
+            info!("[{}] recv pkt 0x{:03X} in InGame", self.addr, pkt_id);
+        }
+
+        match (self.state, pkt_id) {
+            // -- SessionStart --
+            (ConnectionState::SessionStart, packet_id::REQUEST_NETWORK_SETTINGS) => {
+                self.handle_request_network_settings(reader)
+            }
+
+            // -- Login --
+            (ConnectionState::Login, packet_id::LOGIN) => self.handle_login(reader),
+
+            // -- Handshake --
+            (ConnectionState::Handshake, packet_id::CLIENT_TO_SERVER_HANDSHAKE) => {
+                self.handle_client_to_server_handshake(reader)
+            }
+
+            // -- ResourcePacks --
+            (ConnectionState::ResourcePacks, packet_id::RESOURCE_PACK_CLIENT_RESPONSE) => {
+                self.handle_resource_pack_client_response(reader)
+            }
+
+            // -- PreSpawn --
+            (ConnectionState::PreSpawn, packet_id::REQUEST_CHUNK_RADIUS) => {
+                self.handle_request_chunk_radius(reader)
+            }
+
+            // Silently ignore these in PreSpawn
+            (ConnectionState::PreSpawn, packet_id::PLAYER_AUTH_INPUT)
+            | (ConnectionState::PreSpawn, packet_id::SERVERBOUND_LOADING_SCREEN) => Vec::new(),
+
+            // -- SpawnResponse --
+            (ConnectionState::SpawnResponse, packet_id::SET_LOCAL_PLAYER_AS_INITIALIZED) => {
+                self.handle_set_local_player_as_initialized()
+            }
+            // Le client envoie MobEquipment (sélection hotbar) juste avant
+            // SET_LOCAL_PLAYER_AS_INITIALIZED. PMMP l'accepte silencieusement.
+            (ConnectionState::SpawnResponse, packet_id::MOB_EQUIPMENT) => {
+                self.handle_mob_equipment(reader)
+            }
+
+            // -- InGame --
+            (ConnectionState::InGame, packet_id::PLAYER_AUTH_INPUT) => {
+                self.handle_player_auth_input(reader)
+            }
+            (ConnectionState::InGame, packet_id::INVENTORY_TRANSACTION) => {
+                self.handle_inventory_transaction(reader)
+            }
+            (ConnectionState::InGame, packet_id::INTERACT) => self.handle_interact(reader),
+            (ConnectionState::InGame, packet_id::CONTAINER_CLOSE) => {
+                self.handle_container_close(reader)
+            }
+            (ConnectionState::InGame, packet_id::MOB_EQUIPMENT) => {
+                self.handle_mob_equipment(reader)
+            }
+            (ConnectionState::InGame, packet_id::MODAL_FORM_RESPONSE) => {
+                self.handle_modal_form_response(reader)
+            }
+            (ConnectionState::InGame, packet_id::TEXT) => self.handle_text(reader),
+            (ConnectionState::InGame, packet_id::COMMAND_REQUEST) => {
+                self.handle_command_request(reader)
+            }
+            // RespawnPacket C→S : client envoie CLIENT_READY_TO_SPAWN (state=2)
+            // après avoir reçu READY_TO_SPAWN. PMMP DeathPacketHandler::handleRespawn
+            // renvoie un READY_TO_SPAWN pour confirmer la transition.
+            (ConnectionState::InGame, packet_id::RESPAWN) => self.handle_client_respawn(reader),
+            // PlayerActionPacket (0x24) : paquet standalone pour RESPAWN,
+            // START_SPRINT, STOP_SPRINT, START_SNEAK, STOP_SNEAK, JUMP, etc.
+            // PMMP `InGamePacketHandler::handlePlayerAction` → dispatch vers
+            // `handlePlayerActionFromData` (mêmes actions que block_actions de
+            // PlayerAuthInput). Critique : le client envoie les sprint/sneak
+            // states ici. Sans ça, les metadata entity SPRINTING/SNEAKING ne
+            // sont jamais mis à jour server-side.
+            (ConnectionState::InGame, packet_id::PLAYER_ACTION) => {
+                self.handle_player_action(reader)
+            }
+            (ConnectionState::InGame, packet_id::BLOCK_ACTOR_DATA) => {
+                self.handle_block_actor_data(reader)
+            }
+            // Le client peut renvoyer RequestChunkRadius en cours de partie
+            // quand l'utilisateur change la "Render Distance" dans les settings
+            // vidéo. PMMP `InGamePacketHandler::handleRequestChunkRadius`.
+            (ConnectionState::InGame, packet_id::REQUEST_CHUNK_RADIUS) => {
+                self.handle_request_chunk_radius_ingame(reader)
+            }
+            (ConnectionState::ResourcePacks, packet_id::RESOURCE_PACK_CHUNK_REQUEST) => {
+                self.handle_resource_pack_chunk_request(reader)
+            }
+
+            // -- Silently ignored --
+            (_, packet_id::EMOTE_LIST)
+            | (_, packet_id::SERVERBOUND_LOADING_SCREEN)
+            | (_, packet_id::ANIMATE)
+            | (_, packet_id::INTERACT)
+            | (ConnectionState::SpawnResponse, packet_id::PLAYER_AUTH_INPUT)
+            | (_, 0x081) => Vec::new(),
+            // Préférence d'interface du four (2193) : dragonfly l'ignore
+            // aussi (handler `nil`), le serveur n'a rien à en faire.
+            (_, packet_id::SET_PLAYER_FURNACE_OPTIONS) => Vec::new(),
+
+            _ => {
+                info!(
+                    "[{}] Unhandled packet 0x{:03X} in state {:?}",
+                    self.addr, pkt_id, self.state
+                );
+                Vec::new()
+            }
+        }
+    }
+
+    /// Take broadcast packets (to be sent to ALL other players).
+    pub fn take_broadcasts(&mut self) -> Vec<(u32, Vec<u8>)> {
+        std::mem::take(&mut self.broadcasts)
+    }
+
+    pub fn take_pending_commands(&mut self) -> Vec<String> {
+        std::mem::take(&mut self.pending_commands)
+    }
+
+    pub fn take_pending_console_commands(&mut self) -> Vec<String> {
+        std::mem::take(&mut self.pending_console_commands)
+    }
+
+    pub fn take_pending_furnace_events(&mut self) -> Vec<PendingFurnaceEvent> {
+        std::mem::take(&mut self.pending_furnace_events)
+    }
+
+    pub fn take_pending_entity_attacks(&mut self) -> Vec<PendingEntityAttack> {
+        std::mem::take(&mut self.pending_entity_attacks)
+    }
+
+    pub fn is_in_game(&self) -> bool {
+        self.state == ConnectionState::InGame
+    }
+
+    // -- Packet encoding helpers --
+
+    /// Encode a raw packet (no compression, no algo byte, no encryption).
+    /// Used for the first response (NetworkSettings) before compression is negotiated.
+    pub(super) fn encode_raw_packet(&self, pkt_id: u32, payload: &[u8]) -> Vec<u8> {
+        dump_outgoing_packet(pkt_id, payload);
+        let pkt_bytes = codec::encode_packet(pkt_id, payload);
+
+        let mut batch_inner = mc_rs_proto::io::ProtoWriter::with_capacity(pkt_bytes.len() + 5);
+        batch_inner.write_var_u32(pkt_bytes.len() as u32);
+        batch_inner.write_raw(&pkt_bytes);
+
+        let inner = batch_inner.into_bytes();
+        let mut result = Vec::with_capacity(1 + inner.len());
+        result.push(0xFE);
+        result.extend_from_slice(&inner);
+        result
+    }
+
+    /// Compression algo négocié pour cette connexion (typiquement Zlib).
+    /// Exposé pour permettre aux broadcasts de réutiliser un batch déjà encodé
+    /// quand toutes les connexions partagent le même algo — cf
+    /// [`encode_shared_batch`].
+    pub fn compression_algo(&self) -> CompressionAlgorithm {
+        self.compression_algo
+    }
+
+    /// Encode a compressed (and optionally encrypted) packet.
+    pub fn encode_compressed_packet(&self, pkt_id: u32, payload: &[u8]) -> Vec<u8> {
+        dump_outgoing_packet(pkt_id, payload);
+        let pkt_bytes = codec::encode_packet(pkt_id, payload);
+        // Level 1 (fastest) : bench `batch_compression` montre ratio quasi
+        // identique à L6 (0.71 vs 0.73 small / 0.64 vs 0.67 medium) pour 4-5×
+        // moins de CPU. Sur un chunk 150 KB : L1 = 2.1 ms vs L6 = 12 ms.
+        let batch_payload = batch::encode_batch(&[pkt_bytes], self.compression_algo, 1);
+
+        let mut result = Vec::with_capacity(1 + batch_payload.len());
+        result.push(0xFE);
+        result.extend_from_slice(&batch_payload);
+        result
+    }
+
+    /// Prepare a batch for sending: apply encryption if needed.
+    /// This should be called right before sending over RakNet.
+    pub fn prepare_for_send(&mut self, raw_batch: Vec<u8>) -> Vec<u8> {
+        if raw_batch.is_empty() || raw_batch[0] != 0xFE {
+            return raw_batch;
+        }
+
+        let result = if let Some(ref mut ctx) = self.encryption {
+            let payload = &raw_batch[1..];
+            let encrypted = ctx.encrypt(payload);
+            let mut r = Vec::with_capacity(1 + encrypted.len());
+            r.push(0xFE);
+            r.extend_from_slice(&encrypted);
+            r
+        } else {
+            raw_batch
+        };
+
+        // Activate pending encryption AFTER sending this packet
+        if let Some(key) = self.pending_encryption_key.take() {
+            debug!("[{}] Encryption now active", self.addr);
+            self.encryption = Some(EncryptionContext::new(key));
+        }
+
+        result
+    }
+}
+
+/// Mode du dump de débogage des paquets sortants, lu une fois dans
+/// `MCRS_DUMP_PACKETS` : `1` = hex tronqué (256 octets) dans `pkt_sent.log` ;
+/// `full` = en plus, paquets complets dans `pkt_sent.bin`, enregistrements
+/// `[u64 ms][u32 id][u32 len][payload]` little-endian, rejouables dans un
+/// décodeur (gophertunnel) pour trouver un paquet refusé par le client.
+/// C'est de l'I/O synchrone à chaque paquet (~150 µs) : désactivé par défaut.
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum PacketDumpMode {
+    Off,
+    Hex,
+    Full,
+}
+
+fn packet_dump_mode() -> PacketDumpMode {
+    static MODE: std::sync::OnceLock<PacketDumpMode> = std::sync::OnceLock::new();
+    *MODE.get_or_init(|| match std::env::var("MCRS_DUMP_PACKETS").as_deref() {
+        Ok("1") => PacketDumpMode::Hex,
+        Ok("full") => PacketDumpMode::Full,
+        _ => PacketDumpMode::Off,
+    })
+}
+
+/// Point d'entrée unique du dump : appelé par tous les chemins d'encodage
+/// sortants (paquet unitaire, lots partagés, lots de diffusion).
+pub fn dump_outgoing_packet(pkt_id: u32, payload: &[u8]) {
+    let mode = packet_dump_mode();
+    if mode == PacketDumpMode::Off {
+        return;
+    }
+    let now_ms = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .unwrap_or_default()
+        .as_millis() as u64;
+    let append = |path: &str, bytes: &[u8]| {
+        let _ = std::fs::OpenOptions::new()
+            .create(true)
+            .append(true)
+            .open(path)
+            .and_then(|mut f| std::io::Write::write_all(&mut f, bytes));
+    };
+    let hex: String = payload
+        .iter()
+        .take(256)
+        .map(|b| format!("{:02X}", b))
+        .collect();
+    append(
+        "pkt_sent.log",
+        format!(
+            "[{now_ms}] 0x{pkt_id:03X} len={} hex={hex}\n",
+            payload.len()
+        )
+        .as_bytes(),
+    );
+    if mode == PacketDumpMode::Full {
+        let mut record = Vec::with_capacity(16 + payload.len());
+        record.extend_from_slice(&now_ms.to_le_bytes());
+        record.extend_from_slice(&pkt_id.to_le_bytes());
+        record.extend_from_slice(&(payload.len() as u32).to_le_bytes());
+        record.extend_from_slice(payload);
+        append("pkt_sent.bin", &record);
+    }
+}
+
+/// Diagnostic : paquets de pré-spawn à remplacer par une version vide, lus une
+/// fois dans `MCRS_EMPTY_PRESPAWN` (liste séparée par des virgules parmi
+/// `crafting`, `creative`, `playerlist`, `trim`, `jigsaw`, `voxel`). Sert à isoler, avec un vrai client, le
+/// paquet qu'il refuse (`BadPacket`). Désactivé par défaut.
+pub(super) fn prespawn_debug_empty(name: &str) -> bool {
+    static EMPTIED: std::sync::OnceLock<Vec<String>> = std::sync::OnceLock::new();
+    EMPTIED
+        .get_or_init(|| {
+            let list: Vec<String> = std::env::var("MCRS_EMPTY_PRESPAWN")
+                .unwrap_or_default()
+                .split(',')
+                .map(|s| s.trim().to_ascii_lowercase())
+                .filter(|s| !s.is_empty())
+                .collect();
+            if !list.is_empty() {
+                warn!("DIAGNOSTIC: pre-spawn packets sent empty: {:?}", list);
+            }
+            list
+        })
+        .iter()
+        .any(|entry| entry == name)
+}
+
+/// Encode un batch compressé indépendamment de toute connexion. Le résultat
+/// peut être cloné et passé à `prepare_for_send` de plusieurs connexions
+/// partageant le même `CompressionAlgorithm`, économisant le coût zlib N fois
+/// pour les broadcasts.
+///
+/// PMMP fait la même chose via `NetworkSession::sendDataPacket` avec sharedBatch
+/// (cf `PacketBatch::fromPackets` réutilisé par tous les viewers d'un mob).
+pub fn encode_shared_batch(pkt_id: u32, payload: &[u8], algo: CompressionAlgorithm) -> Vec<u8> {
+    dump_outgoing_packet(pkt_id, payload);
+    let pkt_bytes = codec::encode_packet(pkt_id, payload);
+    let batch_payload = batch::encode_batch(&[pkt_bytes], algo, 1);
+    let mut result = Vec::with_capacity(1 + batch_payload.len());
+    result.push(0xFE);
+    result.extend_from_slice(&batch_payload);
+    result
+}

@@ -1,0 +1,264 @@
+# 34 – Observer BDS : captures, décompilation, comparaison avec mc-rs
+
+Journal de travail ouvert le 2026-10-25. Depuis la fin de support de PocketMine-MP, mc-rs avançait par
+déduction (schémas Mojang, gophertunnel, Cloudburst, dragonfly). Ce chantier prend le serveur officiel de
+Mojang, **Bedrock Dedicated Server (BDS)**, comme référence observable : on capture ce qu'il envoie, on lit son
+binaire, et on compare avec mc-rs. Chaque étape est consignée ici ; les fichiers bruts ne sont pas supprimés.
+
+## 1. Où sont les éléments
+
+| Élément | Emplacement | Suivi par git |
+|---|---|---|
+| BDS 1.26.52.3 (Windows et Linux) | `.reference/bds/bedrock-server-1.26.52.3-{win,linux}/` | non (`.reference/`) |
+| Captures de paquets (binaire, JSON, journaux) | `.reference/bds/captures/<serveur>/<date>_<scénario>/` | non |
+| Rapports de comparaison | `.reference/bds/comparisons/` | non |
+| Projet Ghidra de BDS | `C:\tools\ghidra-projects\bds-1.26.52.3` (plusieurs Go) | non |
+| Outil de capture, de décodage et de relevé des drops | `scripts/dev/bds_capture/` (Go, gophertunnel `master` be557e3 : la v1.62.0 n'enregistre pas le réseau NetherNet) | oui |
+| Lecture et comparaison de captures | `scripts/dev/packet_dump.py`, `scripts/dev/compare_captures.py` | oui |
+| Scripts Ghidra | `scripts/dev/ghidra/` | oui |
+| REA (rétro-ingénierie par agent) | `.reference/rea`, serveur MCP `rea` de Claude Code | non |
+
+Le jeton Microsoft de l'outil de capture est rangé dans le dossier de configuration de l'utilisateur
+(`%APPDATA%\mc-rs\bds-capture-token.json`), jamais dans le dépôt.
+
+## 2. BDS 1.26.52.3
+
+- Téléchargé le 2026-10-25 depuis l'API officielle
+  (`https://net-secondary.web.minecraft-services.net/api/v1.0/download/links`), qui annonce 1.26.52.3 en
+  release et 1.26.70.21 en preview. Le BDS local précédent datait de 1.26.10.4.
+- Branche `r/26_u5` (comme 1.26.50), build 51798905. Accepte un client en protocole **2193**.
+- **NetherNet obligatoire** : avec `transport=raknet`, BDS refuse de démarrer (« In this release, NetherNet is
+  the only supported transport type »). Il écoute en TCP (signalisation HTTP, `server-port`) et en UDP
+  (WebRTC). Les clients essaient NetherNet puis retombent sur RakNet (dragonfly, `config.toml`) : mc-rs reste
+  joignable en RakNet.
+- Même avec `online-mode=false`, la connexion NetherNet exige une identité Xbox Live (code d'erreur 37,
+  `ErrorCodeIdentityNotAllowed` de go-nethernet).
+- Le binaire n'a pas de symboles de fonctions (Linux : pas de `.symtab`, 392 symboles dynamiques ; Windows :
+  pas de PDB), mais garde la RTTI : `FenceBlock`, `StairBlock`, `PlayerAuthInputPacket`… Compilé avec clang
+  (Ghidra : `x86:LE:64:default:clangwindows`).
+
+Configuration de test (`server.properties` de la copie Windows) : `server-port=19150`,
+`server-portv6=19151`, `online-mode=false`, `allow-list=false`, `transport=nethernet`.
+
+## 3. Captures
+
+`scripts/dev/bds_capture` se connecte comme un client gophertunnel et enregistre chaque paquet au format de
+`MCRS_DUMP_PACKETS=full` (`[u64 ms][u32 id][u32 longueur][charge utile]`), puis `decode` le transforme en
+JSON Lines avec le décodeur de gophertunnel. Le même bot sert pour BDS (NetherNet) et pour mc-rs (RakNet) :
+les deux captures se comparent avec les mêmes outils.
+
+```text
+bds-capture capture -network nethernet -addr http://127.0.0.1:19150 -out <dossier>/cap -stay 20s
+bds-capture capture -network raknet -addr 127.0.0.1:19132 -out <dossier>/cap -stay 20s
+bds-capture decode -in <dossier>/s2c.bin -direction s2c -out <dossier>/s2c.jsonl
+python scripts/dev/compare_captures.py <bds>/s2c.jsonl <mc-rs>/s2c.jsonl --out <rapport>.txt
+```
+
+| Capture | Paquets serveur → client | Décodage |
+|---|---|---|
+| `1.26.52.3/2026-10-25_bot-nethernet-20s` | 1 946 (3,8 Mo) | 1 946 sans erreur ni octet restant |
+| `mc-rs-749087b/2026-10-25_bot-raknet-20s` | 788 (11,2 Mo) | 788 sans erreur ni octet restant |
+
+Rapports : `.reference/bds/comparisons/2026-10-25_bds-1.26.52.3_vs_mc-rs-749087b.txt` (tous les paquets
+communs) et `2026-10-25_detail_startgame-attributes-playerlist.txt`.
+
+## 4. Constats du 2026-10-25 (bot, 20 s, spawn sans action)
+
+### 4.1 Validé par BDS
+
+- **Format 2193** : BDS et mc-rs se décodent intégralement avec gophertunnel v1.62.0. Les paquets
+  convertis en 2193 (optionnels simples, BossEvent, PlaySound…) sont donc cohérents avec le vrai serveur ;
+  ceux que le bot ne voit pas (InventoryTransaction, ItemStackRequest/Response) restent à capturer avec un
+  vrai client.
+- **Blocs data-driven** : BDS envoie exactement 98 entrées dans `Block Properties` de StartGame, et les
+  définitions de mc-rs (dragonfly `data_driven_blocks.nbt`) sont **identiques** champ par champ.
+- **ItemRegistry** : identique à celui de BDS (aucun écart).
+- **Ingrédients de CraftingData** (point douteux n° 1 de 2169) : les octets de BDS se lisent avec la forme
+  gophertunnel / Cloudburst (variante, nom ou tag, quantité), celle que mc-rs a retenue.
+- NetworkSettings, PlayStatus, ChunkRadiusUpdated : identiques.
+
+### 4.2 Écarts à corriger dans mc-rs
+
+| Paquet | BDS | mc-rs |
+|---|---|---|
+| StartGame | 39 règles de jeu | aucune (**corrigé**, § 5) |
+| StartGame | `ServerAuthoritativeInventory = true` | `false` |
+| StartGame | `PlayerMovementSettings.RewindHistorySize = 40` | 0 (**corrigé**) |
+| StartGame | `PlayerGameMode = 5` (mode du monde), `BaseGameVersion = "*"` | 0, `1.26.51` (`*` **corrigé**) |
+| PlayerList | UUID du joueur | UUID nul (**corrigé**, § 5) |
+| PlayerList | `BuildPlatform`, version moteur de la géométrie : valeurs du client relayées | `-1`, `MINECRAFT_VERSION` forcés (géométrie **corrigée**) |
+| PlayerList | `Trusted = false`, `PrimaryUser = false`, couleur (237, 237, 237) | `true`, `true`, blanc |
+| UpdateAttributes | saturation par défaut 5, épuisement max 20, dégâts d'attaque 1–1, absorption max 16, résistance au recul min −2 ; `air_drag_modifier`, `bounciness`, `friction_modifier` | saturation 20, épuisement max 5, bornes 0–3,4e38 ; `fall_damage` en plus (**corrigé**) |
+| SetActorData (joueur) | environ 80 clés de métadonnées | quelques-unes ; drapeaux différents |
+| CraftingData | 1 217 façonnées, 2 068 sans forme, 1 456 à données, 210 potions, 2 changements de contenant, 14 multi, 13 forge ; identifiant texte (`minecraft:barrel`), UUID, priorités 0 à 50, bloc de sortie renseigné | 1 064 façonnées, 778 sans forme, rien d'autre ; identifiant numérique, UUID nul, priorité 50 partout, bloc de sortie 0 |
+| ResourcePacksInfo | `WorldTemplateVersion = "0.0.0"` | chaîne vide |
+
+Paquets envoyés par BDS et absents de mc-rs : BiomeDefinitionList (définitions complètes), CameraPresets,
+CameraAimAssistPresets, GameRulesChanged, TrimData, UnlockedRecipes, VoxelShapes, JigsawStructureData,
+SyncWorldClocks, PlayerFog, entre autres.
+
+### 4.3 Écarts attendus
+
+Position, graine, identifiants d'entité, nom du monde, heure, chunks (BDS en mode de requête de
+sous-chunks, `SubChunkCount = 0`), IDs de blocs (BDS en hash, mc-rs en séquentiel, les deux valides), skin
+(joueurs différents), JWT de la poignée de main.
+
+### 4.4 Questions ouvertes
+
+- ~~Recette `minecraft:barrel` de BDS avec des bâtons~~ : **résolu**. Cette recette est rattachée au bloc
+  `deprecated` (priorité −1) : une ancienne recette que BDS envoie encore, pas une erreur de lecture.
+- `UpdateAdventureSettings.ShowNameTags` à `false` et `InventoryContent.Container.ContainerID` à 0 chez BDS :
+  à confirmer avec un vrai client.
+
+## 5. Corrections du 2026-10-25
+
+Vérifiées par une nouvelle capture (`captures/mc-rs-wip-bds-fixes-2/`, rapport
+`comparisons/2026-10-25_bds-1.26.52.3_vs_mc-rs-correctifs-2.txt`) : UpdateAttributes sans écart, UUID et
+règles de jeu identiques à BDS ; simulateur 3/3 en jeu, mode probe sans incident.
+
+| Correction | Constat | Source |
+|---|---|---|
+| UUID des joueurs Xbox | `uuid_str` restait vide en authentification Xbox : **tous les vrais joueurs avaient l'UUID nul** dans PlayerList (collisions en multijoueur). Calculé désormais depuis le XUID : MD5 de `pocket-auth-1-xuid:<xuid>`, version 3, variante RFC 4122 | PMMP `LoginPacketHandler::calculateUuidFromXuid`, valeur identique à BDS |
+| Ordre des octets d'UUID | PlayerList et AddPlayer écrivaient les 16 octets bruts ; le protocole les écrit en deux `u64` little-endian (chaque moitié inversée). Masqué jusqu'ici par l'UUID nul. `ProtoWriter::write_uuid` | PMMP `CommonTypes::putUUID`, gophertunnel, BDS |
+| Règles de jeu | Aucune dans StartGame ; noms en minuscules ; défauts Java (`randomTickSpeed` 3, `spawnRadius` 5) ; règles récentes absentes. Désormais les 39 règles de BDS, dans son ordre, en camelCase, insensibles à la casse pour `/gamerule` | BDS 1.26.52.3 |
+| Attributs du joueur | Saturation initiale 5, épuisement borné à 20, absorption à 16, dégâts d'attaque 1–1, recul dès −2, `friction_modifier`, `bounciness`, `air_drag_modifier` ; `fall_damage` retiré (lu nulle part) ; ordre de BDS | BDS 1.26.52.3 |
+| Seuil d'épuisement | Saturation et faim baissaient tous les **5,0** points d'épuisement, le commentaire disait « port PMMP » : PMMP (et le jeu) utilisent **4,0** | PMMP `HungerManager::exhaust` |
+| Version de géométrie du skin | Jetée au login, remplacée par `MINECRAFT_VERSION` ; désormais relayée (repli inchangé si absente) | PMMP `ClientDataToSkinDataHelper`, BDS |
+| StartGame, ResourcePackStack | `BaseGameVersion = "*"`, historique de rembobinage 40 | BDS |
+| Métadonnées du joueur | Drapeau `CAN_CLIMB` absent (le client ne grimpe pas sans lui) ; air et air max, propriétaire, cible, couleur, `ALWAYS_SHOW_NAMETAG`, `SCORE_TAG`, effets visibles absents ; **les autres joueurs (AddPlayer) partaient sans aucun drapeau**. Un seul constructeur, `player_metadata`, pour SetActorData et AddPlayer | Clés communes à PMMP (`Entity`, `Living`, `Player::syncNetworkData`) et BDS ; capture `mc-rs-wip-bds-fixes-3` |
+
+Volontairement non repris :
+
+- **Plateforme dans PlayerList** : BDS relaie celle du client, mais le schéma Mojang n'admet que 11 valeurs
+  sans donner leurs nombres, et une valeur hors énumération provoque l'écran « Block » du vrai client
+  (montée 2169). `-1` (Unknown) reste envoyé, comme PMMP et dragonfly ; seule l'icône de plateforme manque.
+- **Inventaire géré par le serveur** (`ServerAuthoritativeInventory`) : change le comportement du client,
+  à essayer avec un vrai client.
+- **Couleur du joueur dans PlayerList** : `0xFFEDEDED` chez BDS pour un seul joueur ; fixe ou attribuée par
+  joueur, à observer avec plusieurs joueurs.
+
+Métadonnées du joueur encore différentes de BDS : 62 clés secondaires de BDS absentes (positions de lit et
+de mort, commerce, sièges, visée assistée…), `SCALE` et boîte englobante (38, 53, 54) envoyées comme PMMP mais
+plus par BDS, qui utilise `CollisionBox` (130). Les drapeaux de BDS (`Climb` seul, sans `Breathing` ni
+`ShowName`) ont été relevés pendant que son bot était encore placé à y = 32 769, avant le vrai spawn : état
+transitoire, non repris.
+
+Documentation corrigée au passage : bits de drapeaux de `07-ENTITY-SYSTEM.md` (`CAN_CLIMB` 19 et non 16,
+`NO_AI` 16 et non 15, `BABY` 11 et non 8), faim et règles de jeu de `99-ROADMAP.md`, points ouverts de
+`31-PROTOCOL-2169.md` § 4, bugs connus de `CLAUDE.md`.
+
+Écarts trouvés en chemin, non traités ici : les règles de jeu ne sont **appliquées nulle part** en jeu
+(`keepInventory`, `naturalRegeneration`, `fallDamage`… sans effet) ; le `SkinResourcePatch` renvoyé par mc-rs
+n'est pas l'octet près celui du client (fins de ligne), BDS le relaie tel quel.
+
+## 6. Recettes importées de BDS (2026-10-25)
+
+Toutes les recettes de mc-rs viennent désormais du CraftingData de BDS
+(`scripts/import_bds_recipes.py` → `data/recipes/bds.json`, chargé par `recipes_bds.rs`), au lieu de
+bedrock-samples. Les 1 796 recettes de bedrock-samples existent toutes chez BDS sous le même nom ; BDS en
+ajoute 2 856 que le jeu génère par code. Détail du format et du comportement serveur :
+[`30-VANILLA-DATA-IMPORT.md`](30-VANILLA-DATA-IMPORT.md).
+
+Comparaison après import (`comparisons/2026-10-25_craftingdata_bds_vs_mc-rs-recettes-bds-2.txt`) : identifiants,
+UUID, blocs, priorités, ingrédients, NBT, potions, forge, recettes multiples **identiques**. Restent deux écarts
+assumés : la condition de déblocage (« toujours débloquée ») et le runtime ID de bloc des sorties (hash chez BDS,
+séquentiel chez mc-rs). BDS ne met un bloc qu'aux sorties qui sont des items-blocs (pas aux lits, portes,
+panneaux suspendus, feux de camp…) : la présence est reprise sortie par sortie.
+
+Défauts corrigés au passage : les recettes du tailleur de pierre partaient avec le bloc `crafting_table` (elles
+apparaissaient à l'établi) ; `CraftRecipe` ignorait l'identifiant de recette envoyé par le client.
+
+**Mode typé du décodeur** (`bds-capture decode -typed`) : le JSON standard de gophertunnel perd les types NBT et
+affiche `{}` pour tout champ optionnel. Une première lecture de la condition de déblocage (« absente chez BDS »)
+venait de là et était **fausse** : BDS envoie une condition par recette (contexte « None » et les ingrédients
+dont la possession débloque la recette ; aucune pour les recettes à données). Les comparaisons de champs
+optionnels se font désormais sur des captures décodées en mode typé.
+
+## 7. Premier essai avec le vrai client 1.26.52 : écran « Boat »
+
+Après les corrections ci-dessus, le client 1.26.52 (Windows GDK, RakNet 2193) se déconnectait 0,3 s après le
+début de l'envoi des chunks, avec l'écran **« Boat »** et le détail `InitialConnection-148`. Aucune trace côté
+serveur ; `NonAssertErrorLog.txt` du client reste vide.
+
+**Lire un écran d'erreur** : le nombre de `InitialConnection-NNN` est l'indice dans l'énumération Mojang
+`DisconnectFailReason` (`json/DisconnectFailReason.json`). 148 = `MissingStructureData`, valeur ajoutée en
+1.26.50 ; 90 = `BadPacket`, l'écran « Block » de la montée 2169.
+
+Cause : le client 1.26.50+ exige le paquet **JigsawStructureData** (définitions des structures jigsaw), que BDS
+envoie juste avant StartGame et que mc-rs n'envoyait pas (dragonfly v0.11.5 ne l'envoie pas non plus). Correctif :
+JigsawStructureData et VoxelShapes (table des formes de blocs) repris octet pour octet de BDS
+(`scripts/import_bds_packets.py` → `data/bds_packets/`, provenance et SHA-256 dans `manifest.json`), envoyés
+avant StartGame dans l'ordre de BDS. TrimData (garnitures d'armure, `scripts/import_bds_trim_data.py`) est
+envoyé après CreativeContent, comme BDS.
+
+Résultat le 2026-10-25 : connexion, déplacement, sprint, `/gamemode creative` et inventaire créatif fonctionnent
+avec le vrai client 1.26.52. Pour une prochaine bisection, `MCRS_EMPTY_PRESPAWN` accepte aussi `trim`, `jigsaw`
+et `voxel`.
+
+## 8. Décompilation
+
+Cibles : cassage (vitesse, validation), drops, connexions (`minecraft:connection_*`) et coins d'escaliers
+(`minecraft:corner`), forme des faces de blocs, paquets restés douteux.
+
+### 8.1 Analyse de Ghidra : ce qui a marché, ce qui a échoué
+
+- **Analyse complète par défaut** (2026-10-25, 16:12) : bloquée plus de 2 h 30 dans une phase mono-cœur, sans
+  rien écrire au journal ; arrêtée à 19:30, rien de sauvegardé (Ghidra n'écrit le projet qu'à la fin).
+- **Analyse allégée par REA** (20:52 → 23:19, **2 h 26**) : réussie, avec 8 analyseurs désactivés
+  (`Decompiler Switch Analysis`, `Stack`, `Function ID`, `Non-Returning Functions - Discovered`,
+  `Call Convention ID`, `Shared Return Calls`, `Create Address Tables`, `Embedded Media`), 16 Go de tas.
+  747 389 fonctions, 63 773 chaînes. **Perdue** au redémarrage de la session : REA garde le programme en
+  mémoire dans un projet temporaire (`-deleteProject`) et ses snapshots ne conservent que les réponses déjà
+  données, pas la base Ghidra (`docs/cli.md` de REA). Journal conservé :
+  `.reference/bds/rea/ghidra-analysis-1.26.52.3.log`.
+- **Durées par analyseur** (analyse allégée) : x86 Constant Reference 50 min, Data Reference 36 min,
+  Reference 26 min, Disassemble Entry Points 10 min, Call-Fixup Installer 8 min, Scalar Operand References
+  6 min, ASCII Strings 4 min, le reste moins de 3 min chacun.
+- **Relance persistante** (23:32) : même profil, lancée par `analyzeHeadless` avec le pré-script
+  `scripts/dev/ghidra/DisableAnalyzers.java`, dans `C:\tools\ghidra-projects\bds-1.26.52.3-light` (projet
+  sauvegardé à la fin, requêtes suivantes en `-noanalysis`). Suivi : `scripts/dev/ghidra/watch_analysis.sh`
+  (analyseur en cours lu par `jcmd <pid> Thread.print`). **Réussie et sauvegardée** le 2026-10-26 à 04:13
+  (« Analysis succeeded », « Save succeeded ») : 16 756 s, soit **4 h 39**, projet de 2,7 Go. Plus lente que
+  l'analyse de REA (Data Reference 86 min, x86 Constant Reference 76 min, Reference 65 min) car la machine
+  manquait de mémoire (2 Go libres, relevé des drops lancé en parallèle une partie de la nuit). Journal :
+  `.reference/bds/rea/ghidra-light-analysis-1.26.52.3.log`.
+- **Ne jamais annuler une requête REA en cours** : REA détruit alors sa base Ghidra temporaire.
+
+### 8.2 Constats sur le binaire (analyse allégée)
+
+- Pas de PDB, et **presque pas de RTTI** pour les classes de jeu : aucun `.?AV…Block…`, `…Loot…`,
+  `…SilkTouch…` ; seules les lambdas gardent un descripteur. Ghidra ne nomme donc pas les classes de blocs.
+- Les chaînes sont lues par de petites méthodes virtuelles ou des initialiseurs qui remplissent des constantes
+  globales (`FUN_1411e1cc0` renvoie `"has_silk_touch"`, `FUN_1425f41e0`, 167 Ko, enregistre les tags) : la
+  logique de jeu lit ces constantes, pas les chaînes.
+- Chaînes du cassage relevées (adresses de la 1.26.52.3, base 0x140000000) :
+
+| Chaîne | Adresse |
+|---|---|
+| `minecraft:destructible_by_mining`, `block_destructible_by_mining` | 0x14aa0c48f, 0x14aa0c472 |
+| `seconds_to_destroy` | 0x14a9b8875 |
+| `item_specific_speeds`, `destroy_speeds`, `destroy_speed` | 0x14a9dd8d7, 0x14a9dd8c8, 0x14aa31a5d |
+| `requires_correct_tool_for_drops` (code : 0x1419815b3, 0x14941cd4e) | 0x14a9d418d |
+| `minecraft:destructible_by_explosion` | 0x14a9f8efe |
+| `has_silk_touch`, `fortune` | 0x14aa09817, 0x14aa1a695 |
+| `minecraft:{stone,iron,diamond,netherite}_tier_destructible` | 0x14aa2031e… |
+| `minecraft:is_{pickaxe,axe,shovel,hoe,shears,sword,mace}_item_destructible` | 0x14aa203b0… |
+
+- Types C++ nommés par `entt` : `SharedTypes::v1_26_20::BlockDefinition::DestructibleByMiningComponent`
+  (`DetailedMiningSpeed`, `ItemSpecificSpeed`), `DestructibleByExplosionComponent::DetailedResistance`,
+  `BlockDestroyTimeVersioning` (`BlockDestructibleByMining11920Upgrade`, `12130Upgrade`).
+- **Tags absents de nos données** : `minecraft:netherite_tier_destructible` et
+  `minecraft:is_mace_item_destructible` (le dump d'Allay ne les porte sur aucun bloc ; à vérifier sur BDS).
+
+### 8.3 Conséquence pour les drops
+
+Seuls 99 blocs ont une table de butin dans les packs de Mojang (`behavior_packs/vanilla_1.26.50/
+loot_tables/blocks/`, identiques à `bedrock-samples` 1.26.50.4) : les blocs data-driven (dalles et escaliers
+de béton et de laine…). Pour les autres, les drops sont du C++ sans nom : ils sont **observés sur BDS en
+fonctionnement** plutôt que lus dans le binaire. Commande `drops` de `scripts/dev/bds_capture/` : blocs posés
+en grille par la console (`fill`, vérifiés par `testforblock`), puis `loot spawn … mine <bloc> mainhand`
+lancé depuis la console au nom du bot connecté (`execute as @a`), pour chaque outil et enchantement, N tirages par cas ; les items sont relevés dans les
+AddItemActor. `/loot` ne rend pas l'XP : elle reste à relever autrement. Bilan :
+`scripts/dev/summarize_bds_drops.py`. Fait le 2026-10-26 pour chaque état de la palette et 16 outils : les drops
+de mc-rs en viennent désormais ([`36-CASSAGE-DE-BLOCS.md`](36-CASSAGE-DE-BLOCS.md) § 2 bis). Ghidra reste réservé aux formules ponctuelles (vitesse de cassage,
+validation de la durée).

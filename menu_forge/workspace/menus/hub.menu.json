@@ -1,0 +1,118 @@
+{
+  "formatVersion": 1,
+  "id": "hub",
+  "name": "Hub mc-rs",
+  "form": {
+    "layout": "grid",
+    "title": "§l§6mc-rs§r §eHUB",
+    "content": "§7Choisis une action :",
+    "buttons": [
+      {
+        "id": "spawn",
+        "text": "§a▶ Téléporter au spawn",
+        "icon": {
+          "path": "textures/items/compass_item"
+        },
+        "onClick": [
+          {
+            "type": "command",
+            "command": "tp {mcrs.spawn}",
+            "as": "player"
+          },
+          {
+            "type": "close"
+          }
+        ]
+      },
+      {
+        "id": "creative",
+        "text": "§b▶ Mode Créatif",
+        "icon": {
+          "path": "textures/blocks/grass_side_carried"
+        },
+        "onClick": [
+          {
+            "type": "command",
+            "command": "gamemode creative",
+            "as": "player"
+          },
+          {
+            "type": "close"
+          }
+        ]
+      },
+      {
+        "id": "survival",
+        "text": "§e▶ Mode Survie",
+        "onClick": [
+          {
+            "type": "command",
+            "command": "gamemode survival",
+            "as": "player"
+          },
+          {
+            "type": "close"
+          }
+        ]
+      },
+      {
+        "id": "day",
+        "text": "§d▶ Régler sur Jour",
+        "icon": {
+          "path": "textures/items/clock_item"
+        },
+        "onClick": [
+          {
+            "type": "command",
+            "command": "time set day",
+            "as": "player"
+          },
+          {
+            "type": "close"
+          }
+        ]
+      },
+      {
+        "id": "night",
+        "text": "§9▶ Régler sur Nuit",
+        "onClick": [
+          {
+            "type": "command",
+            "command": "time set night",
+            "as": "player"
+          },
+          {
+            "type": "close"
+          }
+        ]
+      },
+      {
+        "id": "biome",
+        "text": "§7▶ Infos biome",
+        "onClick": [
+          {
+            "type": "command",
+            "command": "biome",
+            "as": "player"
+          },
+          {
+            "type": "close"
+          }
+        ]
+      },
+      {
+        "id": "showcase",
+        "text": "§6▶ §lUI Showcase",
+        "icon": {
+          "path": "textures/items/map_filled"
+        },
+        "onClick": [
+          {
+            "type": "open",
+            "menu": "showcase"
+          }
+        ]
+      }
+    ]
+  }
+}

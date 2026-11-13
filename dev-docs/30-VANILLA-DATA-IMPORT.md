@@ -1,0 +1,153 @@
+# Import des données vanilla officielles (2026-04-21)
+
+Intégration complète des **données canoniques Mojang** (`bedrock-samples` v1.26.10.4) et PMMP (`bedrock-data`) dans `crates/mc-rs-server/data/`. Remplace les tables hardcodées du code par la référence officielle.
+
+## Sources
+
+| Repo | Rôle |
+|---|---|
+| `.reference/bedrock-samples/` | Mojang officiel (behavior_pack, metadata/vanilladata_modules, version 1.26.10.4) |
+| `.reference/PocketMine-MP/vendor/pocketmine/bedrock-data/creative/` | Classification créative PMMP 5.42.1 (sous-groupes + icônes) |
+
+## Modules ajoutés
+
+### `creative_content` (dragonfly NBT, depuis le 2026-09-10)
+- **Source** : dragonfly v0.11.5 `server/item/creative/creative_items.nbt` (Bedrock 1.26.50, depuis le 2026-10-25) ; remplace les JSON PMMP 1.26.10, PMMP étant en fin de support.
+- **Data** : `data/creative_items.nbt` (NBT réseau `{groups, items}`)
+- **Contenu** : 124 groupes et 1 980 entrées, avec meta et NBT (livres enchantés, bannières, fusées…).
+- **API** : `creative_content::groups()` + `items()` + `item_name_by_entry_id(entry_id)` + `item_stack_by_entry_id(entry_id, count)` (utilisé par CraftCreative).
+
+### `loot_table` (bedrock-samples)
+- **Sources** :
+  - `behavior_pack/loot_tables/entities/*.json` → **122 drops mobs** vanilla
+  - `behavior_pack/loot_tables/chests/*.json` → **29 coffres** (dungeon, bastion, ancient_city, etc.)
+  - `behavior_pack/loot_tables/equipment/*.json` → 7 sets d'équipement mob
+  - `behavior_pack/loot_tables/gameplay/*.json` → 9 (fishing, piglin_bartering, hero_of_the_village)
+  - `behavior_pack/loot_tables/dispensers/*.json` → 3 (trial_chambers)
+  - `behavior_pack/loot_tables/pots/*.json` → 1 (decorated pots)
+  - `behavior_pack/loot_tables/spawners/*.json` → 5 (trial_chamber, ominous)
+- **Data** : `data/loot_tables/{entities,chests,equipment,gameplay,dispensers,pots,spawners}.json`
+- **Parser** : pools + rolls (fixed/range) + conditions (killed_by_player*, is_baby, on_fire, random_chance*, random_difficulty_chance) + functions (set_count, looting_enchant).
+- **API** :
+  - `loot_table::roll_entity_loot(entity_name, ctx) -> Vec<(name, count)>`
+  - `loot_table::roll_chest_loot(chest_name)`
+  - `loot_table::roll_any(table_name)` — cherche dans toutes les catégories
+  - `total_table_count()` ≥ 176
+
+### `recipes_bds` (CraftingData de BDS, depuis le 2026-10-25)
+- **Source** : le CraftingData que BDS 1.26.52.3 envoie au client, capturé et décodé en mode typé
+  (`bds-capture decode -typed`, voir [`34-BDS-RETRO-INGENIERIE.md`](34-BDS-RETRO-INGENIERIE.md)). Il remplace
+  l'import de bedrock-samples (`recipes_vanilla`, `scripts/import_recipes.py`, `data/recipes/vanilla.json`,
+  retirés ; historique git) : les 1 796 recettes de bedrock-samples y sont toutes, sous le même nom, et BDS en
+  ajoute 2 856 générées par le code du jeu (teintures de lits, sacs et boîtes de Shulker, anciennes recettes,
+  variantes de tailleur de pierre).
+- **Génération** : `python scripts/import_bds_recipes.py <capture>/s2c.typed.jsonl --version 1.26.52.3` ;
+  `--check` compare au fichier en place. Le script s'arrête sur tout élément qu'il ne sait pas représenter.
+- **Data** : `data/recipes/bds.json` ; tags d'ingrédients : `data/recipes/item_tags.json` (dragonfly v0.11.5).
+- **Contenu** : 1 217 façonnées, 2 068 sans forme (dont la cuisson au four, haut fourneau, fumoir, feux de camp et
+  le tailleur de pierre, chacune avec son bloc), 1 456 à données utilisateur, 14 multiples, 13 de forge,
+  210 mélanges d'alambic, 2 changements de contenant. Chaque recette garde son identifiant BDS, son identifiant
+  réseau, son UUID, son bloc, sa priorité et sa condition de déblocage.
+- **Envoi** : CraftingData identique à celui de BDS, sauf la condition de déblocage (« toujours débloquée » :
+  mc-rs n'envoie pas UnlockedRecipes) et le runtime ID de bloc des sorties (séquentiel au lieu d'un hash).
+- **Serveur** : l'établi ne considère que les recettes du bloc `crafting_table` ; `CraftRecipe` retrouve la
+  recette par son identifiant réseau puis vérifie la grille (PMMP `ItemStackRequestExecutor`) ; les recettes à
+  données sont refusées (leur résultat doit reprendre le NBT de l'entrée) ; la cuisson alimente `furnace.rs`
+  (durée 200 ticks et 0,1 d'expérience : BDS ne les envoie pas).
+- **API** : `recipes_bds::register_all(&mut CraftingManager) -> LoadSummary`.
+
+### `spawn_rules_vanilla` (bedrock-samples)
+- **Source** : `behavior_pack/spawn_rules/*.json` (56/58 fichiers ; 2 avec commentaires JSON5 skipped)
+- **Data** : `data/spawn_rules.json`
+- **Conditions accessibles** : weight, brightness_range, surface/underground/water spawner, population_control (ambient/animal/cat/monster/pillager/water_animal).
+- **API** : `spawn_weight(id)`, `brightness_range(id)`, `is_surface_spawner(id)`, etc.
+- **État** : **data-only**. Le système de spawn naturel runtime n'est pas encore wiré (voir Roadmap).
+
+### `biomes_vanilla` (bedrock-samples)
+- **Source** : `behavior_pack/biomes/*.biome.json` (87 biomes)
+- **Data** : `data/biomes.json`
+- **Extrait par biome** : temperature, downfall, top_material, mid_material, foundation_material, sea_material, tags (monster/animal/overworld/plains/…).
+- **API** : `for_biome(id)`, `biomes_with_tag(tag)`, `top_material(id)`.
+- **État** : data-only. Le générateur actuel (`terrain_generator.rs`) utilise encore ses 11 biomes hardcodés — migration future.
+
+### `trading_vanilla` (bedrock-samples)
+- **Source** : `behavior_pack/trading/*.json` (24/27 fichiers ; 3 avec JSON5 skipped)
+- **Data** : `data/trading.json`
+- **Contenu** : tiers → trades → `wants[]` + `gives[]` (chaque item avec quantity min/max optionnel).
+- **Support** : wants/gives peuvent être un array d'arrays (structure imbriquée Bedrock). `Trade::flat_wants()` / `flat_gives()` aplatit.
+- **État** : data-only. Système de villager trading runtime à venir.
+
+### `vanilla_registries` (bedrock-samples)
+- **Source** : `metadata/vanilladata_modules/mojang-{effects,enchantments,potion-effects,potion-types,dimensions}.json`
+- **Data** : `data/vanilla/*.json`
+- **Contenu** : listes canoniques de noms vanilla :
+  - 37 effects
+  - 42 enchantments
+  - 47 potion_effects
+  - 3 potion_types
+  - 3 dimensions
+- **API** : `is_effect(name)`, `is_enchantment(name)`, `is_potion_effect(name)`, `is_dimension(name)` + `EFFECTS`/`ENCHANTMENTS`/etc. `Vec<String>`.
+- **Usage** : validation des arguments de `/effect`, `/enchant`, tab-complete soft-enums.
+
+### `entities_vanilla` (bedrock-samples)
+- **Source** : `behavior_pack/entities/*.json` (126/126, parsés après strip de commentaires JSON5)
+- **Data** : `data/entities.json`
+- **Extrait par mob** : runtime_identifier, is_spawnable, is_summonable, is_experimental, family[], health, attack, scale.
+- **API** : `for_identifier(id)`, `is_spawnable(id)`, `has_family(id, "undead")`, `health(id)`.
+- **Usage** : lookup rapide des propriétés mob sans parser les JSON à chaque fois ; point de départ pour re-architecturer `mob_ai.rs`.
+
+### `items_vanilla` (bedrock-samples)
+- **Source** : `behavior_pack/items/*.json` (77 items data-driven : surtout nourriture + bundles)
+- **Data** : `data/items_vanilla.json`
+- **Extrait par item** : category, tags, max_stack_size, durability, nutrition, saturation (string enum Bedrock → f32), is_food.
+- **API** : `is_food(id)`, `nutrition(id)`, `saturation(id)`.
+
+## Résumé quantitatif
+
+| Catégorie | Éléments chargés |
+|---|---|
+| Loot tables | 176 (122 mobs + 29 chests + 25 autres) |
+| Recipes | 1671 dans le fichier (965 + 557 + 149), 1653 enregistrées (18 cuissons de feu de camp ou dépréciées ignorées) |
+| Creative | 123 groupes, 1 875 entrées |
+| Spawn rules | 56 mobs |
+| Biomes | 87 |
+| Trading tables | 24 (villagers + piglins) |
+| Entity metadata | 126 |
+| Food/item metadata | 77 |
+| Registres vanilla | 5 (effects, enchants, potions×2, dims) |
+
+## Tests
+
+**1010 tests passent** après intégration totale (record précédent : ~985).
+
+## Consommateurs runtime — TOUS BRANCHÉS
+
+| Data | Consommateur runtime |
+|---|---|
+| `creative_content` | ✅ Envoyé dans CreativeContent (0x91) au PreSpawn |
+| `recipes_bds` | ✅ 4 768 recettes de BDS 1.26.52.3, toutes chargées, CraftingData identique à BDS (voir ci-dessus) ; remplace `recipes_vanilla` (bedrock-samples) le 2026-10-25 |
+| `loot_table::roll_entity_loot` | ✅ Wired dans `mob_entities::apply_attack` (drops mobs vanilla) |
+| `loot_table::roll_chest_loot` | ✅ API exposée pour générateur de structures (data prête) |
+| `spawn_rules_vanilla` | ✅ `mob_spawner.rs` consulte `spawn_weight` + `brightness_range` chaque game tick |
+| `biomes_vanilla` | ✅ `world::biome::biome_identifier()` mappe 73 IDs Bedrock → minecraft:* |
+| `vanilla_registries::is_effect/is_enchantment` | ✅ Validation `/effect`, `/enchant` via `from_name_or_id` |
+| `entities_vanilla` | ✅ Health/family/spawnable accessible (entities_vanilla::for_identifier) |
+| `items_vanilla::nutrition/saturation` | ✅ Wired dans `Connection::handle_consume_item` (eat handler) |
+| `trading_vanilla` | 🚧 Data prête, UI villager à brancher |
+
+## Commits
+
+Phase "données officielles" réalisée en 8 commits initialement, puis 4 commits supplémentaires
+pour brancher les consommateurs runtime :
+1. `feat(creative)` — inventaire créatif PMMP
+2. `feat(loot)` — loot tables entités
+3. `feat(recipes)` — 1601 recettes
+4. `feat(loot)` — loot tables chests
+5. `feat(spawn)` — 56 spawn rules
+6. `feat(biomes)` — 87 biomes
+7. `feat(data)` — équipment/gameplay/dispensers/pots/spawners + trading + registries + entities + items
+8. `docs(vanilla)` — documentation 30-VANILLA-DATA-IMPORT.md
+9. `feat(commands)` — /effect /enchant /particle wirés sur vanilla_registries
+10. `feat(food+loot+spawner)` — items_vanilla.nutrition + loot_table::roll_entity_loot + mob_spawner.rs
+11. `feat(blocks)` — biomes_vanilla::biome_identifier mapping pour intégration terrain
+12. `feat(chest+crafting+anvil)` — InventoryManager étendu pour Block UIs avec recipes_vanilla

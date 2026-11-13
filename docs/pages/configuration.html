@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Configuration — MC-RS Documentation</title>
+  <link rel="icon" type="image/png" href="../logo-simple.png">
+  <link rel="stylesheet" href="../style.css">
+</head>
+<body>
+
+<!-- Header -->
+<header class="site-header">
+  <button class="hamburger" aria-label="Menu">&#9776;</button>
+  <a href="../" class="header-logo">
+    <img src="../logo-clean.png" alt="MC-RS" class="header-logo-img" style="height:34px;width:auto">
+  </a>
+  <div class="search-wrapper">
+    <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+    <input type="text" class="search-input" placeholder="Search documentation...">
+    <span class="search-shortcut">/</span>
+    <div class="search-results"></div>
+  </div>
+</header>
+
+<!-- Sidebar -->
+<nav class="sidebar">
+  <div class="sidebar-section">
+    <div class="sidebar-section-title">Getting Started</div>
+    <a href="../" class="sidebar-link">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+      Home
+    </a>
+    <a href="overview.html" class="sidebar-link">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4m0-4h.01"/></svg>
+      Overview
+    </a>
+    <a href="architecture.html" class="sidebar-link">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="6" height="6" rx="1"/><rect x="16" y="3" width="6" height="6" rx="1"/><rect x="16" y="15" width="6" height="6" rx="1"/><path d="M8 10h4m0 0v-4m0 4v4m0-4h4"/></svg>
+      Architecture
+    </a>
+  </div>
+  <div class="sidebar-section">
+    <div class="sidebar-section-title">Core Systems</div>
+    <a href="protocol.html" class="sidebar-link">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><polyline points="13 2 13 9 20 9"/></svg>
+      Protocol
+    </a>
+    <a href="networking.html" class="sidebar-link">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12.55a11 11 0 0 1 14.08 0"/><path d="M1.42 9a16 16 0 0 1 21.16 0"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0"/><circle cx="12" cy="20" r="1"/></svg>
+      Networking
+    </a>
+    <a href="world.html" class="sidebar-link">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+      World
+    </a>
+  </div>
+  <div class="sidebar-section">
+    <div class="sidebar-section-title">Features</div>
+    <a href="commands.html" class="sidebar-link">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>
+      Commands
+    </a>
+    <a href="configuration.html" class="sidebar-link active">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+      Configuration
+    </a>
+  </div>
+  <div class="sidebar-section">
+    <div class="sidebar-section-title">Roadmap</div>
+    <a href="roadmap.html" class="sidebar-link">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+      Roadmap
+    </a>
+  </div>
+  <div class="sidebar-section">
+    <div class="sidebar-section-title">Extensions</div>
+    <a href="plugins.html" class="sidebar-link">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+      Plugins
+    </a>
+    <a href="web-panel.html" class="sidebar-link">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
+      Web Panel
+    </a>
+    <a href="resource-packs.html" class="sidebar-link">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
+      Resource Packs &amp; UI
+    </a>
+  </div>
+  <div class="sidebar-section">
+    <div class="sidebar-section-title">Links</div>
+    <a href="https://github.com/pedrokarim/mc-rs" class="sidebar-link" target="_blank" rel="noopener">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z"/></svg>
+      GitHub
+    </a>
+  </div>
+</nav>
+
+<div class="sidebar-overlay"></div>
+
+<!-- Main Content -->
+<main class="main-content">
+  <div class="content-inner">
+
+    <h1>Configuration</h1>
+    <p class="page-subtitle">Server settings via server.toml with sensible defaults.</p>
+
+    <!-- Auto-creation -->
+    <h2>Getting Started</h2>
+    <p>MC-RS uses a single <code>server.toml</code> file for all configuration. On first run, the server automatically generates a default <code>server.toml</code> in the working directory with sensible defaults. You can then edit it and restart the server to apply changes.</p>
+
+    <div class="alert alert-info">
+      <strong>Tip:</strong> The server reads <code>server.toml</code> from the current working directory at startup. If the file does not exist, it is created automatically with all default values.
+    </div>
+
+    <!-- Full Example -->
+    <h2>Full Configuration Example</h2>
+    <p>Here is a complete <code>server.toml</code> with all available options and their default values:</p>
+
+    <pre><code><span class="cm"># ===========================================</span>
+<span class="cm"># MC-RS Server Configuration</span>
+<span class="cm"># ===========================================</span>
+
+<span class="ty">[server]</span>
+<span class="kw">motd</span> = <span class="str">"MC-RS Server"</span>          <span class="cm"># Server name shown in the server list</span>
+<span class="kw">sub_motd</span> = <span class="str">"Powered by Rust"</span>   <span class="cm"># Sub-title shown below the MOTD</span>
+<span class="kw">port</span> = <span class="num">19132</span>                    <span class="cm"># UDP port to listen on</span>
+<span class="kw">max_players</span> = <span class="num">20</span>               <span class="cm"># Maximum concurrent players</span>
+<span class="kw">online_mode</span> = <span class="num">false</span>            <span class="cm"># Xbox Live authentication</span>
+<span class="kw">view_distance</span> = <span class="num">8</span>              <span class="cm"># Chunk render distance (in chunks)</span>
+<span class="kw">tick_rate</span> = <span class="num">10</span>                 <span class="cm"># Milliseconds per server tick</span>
+
+<span class="ty">[world]</span>
+<span class="kw">name</span> = <span class="str">"world"</span>                 <span class="cm"># World directory name</span>
+<span class="kw">generator</span> = <span class="str">"normal"</span>           <span class="cm"># "normal" (Simplex 3D) or "flat"</span>
+<span class="kw">seed</span> = <span class="num">0</span>                       <span class="cm"># World seed (0 = random)</span>
+
+<span class="ty">[gameplay]</span>
+<span class="kw">gamemode</span> = <span class="str">"survival"</span>          <span class="cm"># Default game mode for new players</span>
+<span class="kw">difficulty</span> = <span class="str">"normal"</span>          <span class="cm"># World difficulty</span>
+<span class="kw">pvp</span> = <span class="num">true</span>                     <span class="cm"># Player vs Player combat</span>
+<span class="kw">do_daylight_cycle</span> = <span class="num">true</span>      <span class="cm"># Day/night cycle progression</span>
+<span class="kw">do_weather_cycle</span> = <span class="num">false</span>      <span class="cm"># Weather changes over time</span>
+<span class="kw">spawn_protection</span> = <span class="num">16</span>         <span class="cm"># Spawn area protection radius</span>
+
+<span class="ty">[logging]</span>
+<span class="kw">directory</span> = <span class="str">"logs"</span>             <span class="cm"># Log output directory</span>
+<span class="kw">rotation</span> = <span class="str">"daily"</span>            <span class="cm"># daily | hourly | minutely | never</span>
+<span class="kw">max_files</span> = <span class="num">14</span>                 <span class="cm"># Archives to keep (0 = unlimited)</span>
+<span class="kw">level</span> = <span class="str">"info"</span>                <span class="cm"># env_logger filter (RUST_LOG overrides)</span>
+<span class="kw">stdout</span> = <span class="num">true</span>                  <span class="cm"># Log to console</span>
+<span class="kw">file</span> = <span class="num">true</span>                    <span class="cm"># Log to file</span>
+<span class="kw">ansi</span> = <span class="num">true</span>                    <span class="cm"># ANSI colors on stdout</span>
+
+<span class="ty">[webui]</span>
+<span class="kw">enabled</span> = <span class="num">true</span>                 <span class="cm"># Enable the web admin panel</span>
+<span class="kw">bind</span> = <span class="str">"127.0.0.1:8080"</span>       <span class="cm"># Panel listen address</span>
+<span class="kw">database_url</span> = <span class="str">"sqlite://webui.db"</span>
+<span class="kw">session_duration_hours</span> = <span class="num">24</span>    <span class="cm"># JWT session lifetime</span>
+
+<span class="ty">[webui.tls]</span>
+<span class="kw">enabled</span> = <span class="num">false</span>                <span class="cm"># Serve the panel over HTTPS</span>
+<span class="kw">cert_path</span> = <span class="str">""</span>
+<span class="kw">key_path</span> = <span class="str">""</span>
+
+<span class="ty">[resource_pack]</span>
+<span class="kw">must_accept</span> = <span class="num">true</span>             <span class="cm"># Force clients to accept the bundled pack</span></code></pre>
+
+    <!-- [server] Section -->
+    <h2>[server] Section</h2>
+    <p>Controls the network-facing server settings and performance parameters.</p>
+
+    <table>
+      <thead>
+        <tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>motd</code></td>
+          <td>String</td>
+          <td><code>"MC-RS Server"</code></td>
+          <td>The server name displayed in the Minecraft server list. Supports standard text (no color codes).</td>
+        </tr>
+        <tr>
+          <td><code>sub_motd</code></td>
+          <td>String</td>
+          <td><code>"Powered by Rust"</code></td>
+          <td>Secondary line shown below the MOTD in the server list.</td>
+        </tr>
+        <tr>
+          <td><code>port</code></td>
+          <td>Integer</td>
+          <td><code>19132</code></td>
+          <td>UDP port the server listens on. The default <code>19132</code> is the standard Bedrock port. Clients on the same LAN will auto-discover the server on this port.</td>
+        </tr>
+        <tr>
+          <td><code>max_players</code></td>
+          <td>Integer</td>
+          <td><code>20</code></td>
+          <td>Maximum number of players that can be connected simultaneously. Additional connections are rejected.</td>
+        </tr>
+        <tr>
+          <td><code>online_mode</code></td>
+          <td>Boolean</td>
+          <td><code>false</code></td>
+          <td>When <code>true</code>, the server verifies Xbox Live authentication tokens during login. When <code>false</code>, any player name is accepted (cracked mode).</td>
+        </tr>
+        <tr>
+          <td><code>view_distance</code></td>
+          <td>Integer</td>
+          <td><code>16</code></td>
+          <td>Maximum chunk render distance (2&ndash;32). The client may request less, never more. Higher values increase the visible area but require more memory and bandwidth.</td>
+        </tr>
+        <tr>
+          <td><code>tick_rate</code></td>
+          <td>Integer</td>
+          <td><code>10</code></td>
+          <td>Milliseconds between server ticks. Lower values mean faster updates but higher CPU usage. The default of 10ms gives 100 ticks per second.</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <!-- [world] Section -->
+    <h2>[world] Section</h2>
+    <p>Controls world generation and storage.</p>
+
+    <table>
+      <thead>
+        <tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>name</code></td>
+          <td>String</td>
+          <td><code>"world"</code></td>
+          <td>Directory name where world data is stored. The server creates this directory if it does not exist.</td>
+        </tr>
+        <tr>
+          <td><code>generator</code></td>
+          <td>String</td>
+          <td><code>"normal"</code></td>
+          <td>World generator type. Valid values: <code>"normal"</code> (Simplex 3D terrain with biomes, ores and trees) or <code>"flat"</code> (superflat world for building and testing).</td>
+        </tr>
+        <tr>
+          <td><code>seed</code></td>
+          <td>Integer</td>
+          <td><code>0</code></td>
+          <td>Seed for world generation. A value of <code>0</code> generates a random seed at startup. The same seed always produces the same terrain.</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="alert alert-info">
+      <strong>Generator types:</strong> The <code>normal</code> generator uses Simplex 3D noise to produce biomes, caves, ores, trees and water — suitable for survival. The <code>flat</code> generator creates a classic superflat world ideal for building and testing.
+    </div>
+
+    <!-- [gameplay] Section -->
+    <h2>[gameplay] Section</h2>
+    <p>Controls in-game rules and mechanics.</p>
+
+    <table>
+      <thead>
+        <tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>gamemode</code></td>
+          <td>String</td>
+          <td><code>"survival"</code></td>
+          <td>Default game mode for new players. Valid values: <code>"survival"</code>, <code>"creative"</code>, <code>"adventure"</code>, <code>"spectator"</code>.</td>
+        </tr>
+        <tr>
+          <td><code>difficulty</code></td>
+          <td>String</td>
+          <td><code>"normal"</code></td>
+          <td>World difficulty level. Valid values: <code>"peaceful"</code>, <code>"easy"</code>, <code>"normal"</code>, <code>"hard"</code>.</td>
+        </tr>
+        <tr>
+          <td><code>pvp</code></td>
+          <td>Boolean</td>
+          <td><code>true</code></td>
+          <td>Whether players can damage each other. When <code>false</code>, player-to-player combat is disabled.</td>
+        </tr>
+        <tr>
+          <td><code>do_daylight_cycle</code></td>
+          <td>Boolean</td>
+          <td><code>true</code></td>
+          <td>Whether the day/night cycle progresses automatically. When <code>false</code>, time stays fixed at whatever value was last set.</td>
+        </tr>
+        <tr>
+          <td><code>do_weather_cycle</code></td>
+          <td>Boolean</td>
+          <td><code>false</code></td>
+          <td>Whether weather changes occur automatically. When <code>false</code>, weather stays clear unless changed with <code>/weather</code>.</td>
+        </tr>
+        <tr>
+          <td><code>spawn_protection</code></td>
+          <td>Integer</td>
+          <td><code>16</code></td>
+          <td>Radius (in blocks) around the world spawn point where non-operator players cannot break or place blocks.</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <!-- [logging] Section -->
+    <h2>[logging] Section</h2>
+    <p>Controls log output and rotation. The <code>RUST_LOG</code> environment variable always overrides <code>level</code> if set.</p>
+    <table>
+      <thead><tr><th>Option</th><th>Default</th><th>Description</th></tr></thead>
+      <tbody>
+        <tr><td><code>directory</code></td><td><code>"logs"</code></td><td>Directory for log files (<code>server.&lt;DATE&gt;.log</code>)</td></tr>
+        <tr><td><code>rotation</code></td><td><code>"daily"</code></td><td><code>daily</code> / <code>hourly</code> / <code>minutely</code> / <code>never</code></td></tr>
+        <tr><td><code>max_files</code></td><td><code>14</code></td><td>Number of archives to keep (0 = unlimited)</td></tr>
+        <tr><td><code>level</code></td><td><code>"info"</code></td><td>env_logger filter, e.g. <code>"info,mc_rs_raknet=debug"</code></td></tr>
+        <tr><td><code>stdout</code> / <code>file</code></td><td><code>true</code></td><td>Write logs to console / file</td></tr>
+        <tr><td><code>ansi</code></td><td><code>true</code></td><td>Color stdout logs with ANSI codes</td></tr>
+      </tbody>
+    </table>
+
+    <!-- [webui] Section -->
+    <h2>[webui] Section</h2>
+    <p>Controls the built-in web admin panel (the <code>mc-rs-webui</code> crate).</p>
+    <table>
+      <thead><tr><th>Option</th><th>Default</th><th>Description</th></tr></thead>
+      <tbody>
+        <tr><td><code>enabled</code></td><td><code>true</code></td><td>Enable the panel and its HTTP server</td></tr>
+        <tr><td><code>bind</code></td><td><code>"127.0.0.1:8080"</code></td><td>Listen address (bind to <code>0.0.0.0</code> to expose on the network)</td></tr>
+        <tr><td><code>database_url</code></td><td><code>"sqlite://webui.db"</code></td><td>Backing store for users/audit (SQLite; Postgres/Mongo planned)</td></tr>
+        <tr><td><code>session_duration_hours</code></td><td><code>24</code></td><td>JWT session lifetime</td></tr>
+        <tr><td><code>tls.enabled</code></td><td><code>false</code></td><td>Serve the panel over HTTPS (<code>tls.cert_path</code> / <code>tls.key_path</code>)</td></tr>
+      </tbody>
+    </table>
+
+    <!-- [resource_pack] Section -->
+    <h2>[resource_pack] Section</h2>
+    <table>
+      <thead><tr><th>Option</th><th>Default</th><th>Description</th></tr></thead>
+      <tbody>
+        <tr><td><code>must_accept</code></td><td><code>true</code></td><td>Force clients to accept the bundled pack. Recommended when the pack provides structural UI overrides (otherwise Bedrock may silently ignore them).</td></tr>
+      </tbody>
+    </table>
+
+    <!-- File Locations -->
+    <h2>File Locations</h2>
+    <p>MC-RS uses the following files and directories relative to the working directory:</p>
+
+    <table>
+      <thead>
+        <tr><th>Path</th><th>Description</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>server.toml</code></td>
+          <td>Main configuration file. Auto-created on first run with default values.</td>
+        </tr>
+        <tr>
+          <td><code>worlds/&lt;name&gt;/</code></td>
+          <td>World data: LevelDB chunk storage (<code>db/</code>), <code>level.dat</code>, and <code>level_seed.txt</code>.</td>
+        </tr>
+        <tr>
+          <td><code>players/</code></td>
+          <td>Per-player state (position, inventory, gamemode) as JSON files keyed by XUID.</td>
+        </tr>
+        <tr>
+          <td><code>resource_packs/</code></td>
+          <td>Resource packs served to clients (e.g. the bundled <code>mcrs_ui</code> UI pack).</td>
+        </tr>
+        <tr>
+          <td><code>logs/</code></td>
+          <td>Rotating server logs; <code>CRASH-*.log</code> on panic.</td>
+        </tr>
+        <tr>
+          <td><code>webui.db</code></td>
+          <td>SQLite database for the web admin panel (users, audit log).</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="alert alert-warn">
+      <strong>Important:</strong> Changes to <code>server.toml</code> require a server restart to take effect. The server does not hot-reload configuration.
+    </div>
+
+  </div>
+</main>
+
+<footer class="site-footer">
+  MC-RS &mdash; Minecraft Bedrock Edition Server in Rust &mdash; <a href="https://github.com/pedrokarim/mc-rs">GitHub</a> &mdash; MIT License
+</footer>
+
+<script src="../nav.js"></script>
+<script src="../search-data.js"></script>
+<script src="../search.js"></script>
+</body>
+</html>

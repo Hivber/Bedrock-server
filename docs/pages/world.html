@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>World System — MC-RS Documentation</title>
+  <link rel="icon" type="image/png" href="../logo-simple.png">
+  <link rel="stylesheet" href="../style.css">
+</head>
+<body>
+
+<!-- Header -->
+<header class="site-header">
+  <button class="hamburger" aria-label="Menu">&#9776;</button>
+  <a href="../" class="header-logo">
+    <img src="../logo-clean.png" alt="MC-RS" class="header-logo-img" style="height:34px;width:auto">
+  </a>
+  <div class="search-wrapper">
+    <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+    <input type="text" class="search-input" placeholder="Search documentation...">
+    <span class="search-shortcut">/</span>
+    <div class="search-results"></div>
+  </div>
+</header>
+
+<!-- Sidebar -->
+<nav class="sidebar">
+  <div class="sidebar-section">
+    <div class="sidebar-section-title">Getting Started</div>
+    <a href="../" class="sidebar-link">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+      Home
+    </a>
+    <a href="overview.html" class="sidebar-link">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4m0-4h.01"/></svg>
+      Overview
+    </a>
+    <a href="architecture.html" class="sidebar-link">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="6" height="6" rx="1"/><rect x="16" y="3" width="6" height="6" rx="1"/><rect x="16" y="15" width="6" height="6" rx="1"/><path d="M8 10h4m0 0v-4m0 4v4m0-4h4"/></svg>
+      Architecture
+    </a>
+  </div>
+  <div class="sidebar-section">
+    <div class="sidebar-section-title">Core Systems</div>
+    <a href="protocol.html" class="sidebar-link">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><polyline points="13 2 13 9 20 9"/></svg>
+      Protocol
+    </a>
+    <a href="networking.html" class="sidebar-link">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12.55a11 11 0 0 1 14.08 0"/><path d="M1.42 9a16 16 0 0 1 21.16 0"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0"/><circle cx="12" cy="20" r="1"/></svg>
+      Networking
+    </a>
+    <a href="world.html" class="sidebar-link active">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+      World
+    </a>
+  </div>
+  <div class="sidebar-section">
+    <div class="sidebar-section-title">Features</div>
+    <a href="commands.html" class="sidebar-link">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>
+      Commands
+    </a>
+    <a href="configuration.html" class="sidebar-link">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+      Configuration
+    </a>
+  </div>
+  <div class="sidebar-section">
+    <div class="sidebar-section-title">Roadmap</div>
+    <a href="roadmap.html" class="sidebar-link">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+      Roadmap
+    </a>
+  </div>
+  <div class="sidebar-section">
+    <div class="sidebar-section-title">Extensions</div>
+    <a href="plugins.html" class="sidebar-link">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+      Plugins
+    </a>
+    <a href="web-panel.html" class="sidebar-link">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
+      Web Panel
+    </a>
+    <a href="resource-packs.html" class="sidebar-link">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
+      Resource Packs &amp; UI
+    </a>
+  </div>
+  <div class="sidebar-section">
+    <div class="sidebar-section-title">Links</div>
+    <a href="https://github.com/pedrokarim/mc-rs" class="sidebar-link" target="_blank" rel="noopener">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z"/></svg>
+      GitHub
+    </a>
+  </div>
+</nav>
+
+<div class="sidebar-overlay"></div>
+
+<!-- Main Content -->
+<main class="main-content">
+  <div class="content-inner">
+
+    <h1>World System</h1>
+    <p class="page-subtitle">Chunk-based world with flat and Simplex 3D terrain generation, biomes, and LevelDB persistence.</p>
+
+    <!-- Chunk Format -->
+    <h2>Chunk Format</h2>
+    <p>The world is divided into vertical <strong>chunk columns</strong>, each spanning 16 blocks in X and 16 blocks in Z. The Y range extends from <strong>-64 to 319</strong> (384 blocks total), divided into <strong>24 sub-chunks</strong> of 16&times;16&times;16 blocks each.</p>
+
+    <p>Each sub-chunk uses <strong>paletted storage</strong> with a dynamic number of bits per block. The palette maps local indices to block network IDs. Sub-chunks that contain only air are omitted during network serialization.</p>
+
+    <pre><code><span class="cm">// Sub-chunk paletted storage</span>
+<span class="ty">SubChunk</span> {
+    version: <span class="ty">u8</span>,              <span class="cm">// sub-chunk version (8)</span>
+    storage_count: <span class="ty">u8</span>,        <span class="cm">// number of block storage layers (1 or 2)</span>
+    storage: [<span class="ty">PalettedStorage</span>], <span class="cm">// block layers (layer 0 = blocks, layer 1 = waterlogged)</span>
+}
+
+<span class="ty">PalettedStorage</span> {
+    header: <span class="ty">u8</span>,               <span class="cm">// (bits_per_block &lt;&lt; 1) | 1  (runtime flag in bit 0)</span>
+    block_indices: [<span class="ty">u8</span>],      <span class="cm">// bit-packed palette indices for 4096 blocks</span>
+    palette_count: <span class="ty">VarInt32</span>,   <span class="cm">// number of entries in the palette</span>
+    palette: [<span class="ty">VarInt32</span>],       <span class="cm">// block network IDs (runtime hashes)</span>
+}
+
+<span class="cm">// Special case: single-block sub-chunk (bits_per_block = 0)</span>
+<span class="cm">// Header byte: 0x01 (0 &lt;&lt; 1 | 1)</span>
+<span class="cm">// NO palette count written, just the single block network ID</span></code></pre>
+
+    <div class="alert alert-info">
+      <strong>Network flag:</strong> The header byte has bit 0 set to 1 for network (runtime) serialization. This distinguishes it from disk (persistence) format where bit 0 is 0. MC-RS only uses the network format since chunks are not persisted to disk.
+    </div>
+
+    <!-- Biome Sections -->
+    <h2>Biome Sections</h2>
+    <p>Each sub-chunk includes a biome section serialized after the block storage layers. Biomes use the same paletted encoding as blocks but at <strong>4&times;4&times;4 resolution</strong> (64 cells per section instead of 4096).</p>
+
+    <p>For chunks with a single biome (the common case in MC-RS), the biome section is encoded compactly: a header byte of <code>0x01</code> (0 bits per entry, runtime flag set) followed by a single <code>VarInt32</code> biome network ID. No palette count is written for single-biome sections.</p>
+
+    <!-- Terrain Generators -->
+    <h2>Terrain Generators</h2>
+    <p>MC-RS includes two terrain generators, selectable via configuration.</p>
+
+    <h3>Flat Generator</h3>
+    <p>The flat generator produces a simple layered world:</p>
+    <ul>
+      <li><strong>Y = -64</strong> &mdash; Bedrock layer</li>
+      <li><strong>Y = -63 to -59</strong> &mdash; 5 layers of dirt</li>
+      <li><strong>Y = -58</strong> &mdash; Grass block on top</li>
+    </ul>
+    <p>Block IDs are resolved as sequential indices from <code>canonical_block_states.nbt</code>. All sub-chunks above the surface layer are empty (air) and omitted from the network payload.</p>
+
+    <h3>Normal Generator (Simplex 3D)</h3>
+    <p>The <code>normal</code> generator uses <strong>Simplex 3D noise</strong> to carve terrain, combined with a temperature/rainfall biome classifier. Each column's surface, sub-surface and decoration are chosen by its biome.</p>
+
+    <p>The generator produces:</p>
+    <ul>
+      <li><strong>11 biomes</strong> &mdash; classified from temperature &amp; rainfall noise</li>
+      <li><strong>Stone / dirt / grass / sand / gravel / snow</strong> &mdash; biome-aware surface and sub-surface layers</li>
+      <li><strong>Water</strong> &mdash; fills columns below sea level</li>
+      <li><strong>Ores</strong> &mdash; vein placement by depth (coal, iron, gold, redstone, diamond, …)</li>
+      <li><strong>Trees</strong> &mdash; species per biome</li>
+      <li><strong>Structures</strong> &mdash; villages, temples, mineshafts, strongholds, ocean monuments and more</li>
+    </ul>
+
+    <p>Other dimensions (Nether, End) and their generators/structures are also implemented.</p>
+
+    <div class="alert alert-info">
+      <strong>Parallel generation:</strong> Chunk generation is offloaded to tokio's blocking thread pool via <code>spawn_blocking</code>. Multiple chunks can be generated in parallel, and the results are cached for subsequent player connections.
+    </div>
+
+    <!-- Block Network IDs -->
+    <h2>Block Network IDs</h2>
+    <p>MC-RS sets <code>block_network_ids_are_hashes=false</code> in the <code>StartGame</code> packet. Block runtime IDs are therefore <strong>sequential indices</strong> into <code>canonical_block_states.nbt</code> &mdash; the block at index 0 has network ID 0, index 1 has ID 1, and so on.</p>
+
+    <p>The file is parsed at startup using <strong>Network Little-Endian NBT</strong> decoding (ZigZag VarInt for integer types), and each block state's position in the file becomes its network ID.</p>
+
+    <pre><code><span class="cm">// canonical_block_states.nbt format</span>
+<span class="cm">// Network Little-Endian NBT (ZigZag VarInt for int types)</span>
+<span class="cm">// Each entry:</span>
+<span class="ty">TAG_Compound</span>(<span class="str">""</span>) {
+    <span class="ty">TAG_String</span>(<span class="str">"name"</span>): <span class="str">"minecraft:stone"</span>,
+    <span class="ty">TAG_Compound</span>(<span class="str">"states"</span>) {
+        <span class="cm">// block-specific properties</span>
+    },
+    <span class="ty">TAG_Int</span>(<span class="str">"version"</span>): <span class="num">...</span>,
+}
+
+<span class="cm">// Block at index 0 in the file → network ID 0</span>
+<span class="cm">// Block at index 1 → network ID 1</span>
+<span class="cm">// etc.</span></code></pre>
+
+    <!-- Dynamic Spawn Position -->
+    <h2>Dynamic Spawn Position</h2>
+    <p>The spawn Y coordinate is not hardcoded. MC-RS generates the spawn chunk first, then scans the column at (0, 0) to find the highest solid block. The player is spawned 2 blocks above that surface, ensuring they always appear on top of the terrain regardless of which generator is active.</p>
+
+    <!-- Chunk Streaming -->
+    <h2>Chunk Streaming</h2>
+    <p>Chunks are sent to players based on their position in the world. The chunk loading flow works as follows:</p>
+
+    <ol>
+      <li><strong>RequestChunkRadius</strong> &mdash; The client sends its desired render distance (in chunks).</li>
+      <li><strong>ChunkRadiusUpdated</strong> &mdash; The server confirms the actual chunk radius it will provide (may be clamped to a server-configured maximum).</li>
+      <li><strong>LevelChunk</strong> &mdash; The server sends chunk data for all chunks within the negotiated radius around the player's position. Each <code>LevelChunk</code> packet contains the serialized sub-chunks, biome sections, and a border block count (0).</li>
+      <li><strong>NetworkChunkPublisherUpdate</strong> &mdash; The server announces the center position and radius of the chunk area it considers "published" (loaded and available to the client).</li>
+    </ol>
+
+    <p>As the player moves, new chunks entering the radius are generated and sent, while chunks leaving the radius are released. Chunks are generated on demand, cached in memory, and persisted to disk.</p>
+
+    <div class="alert alert-info">
+      <strong>Persistence:</strong> Chunks are stored in <strong>LevelDB</strong> under <code>worlds/&lt;name&gt;/db</code>. A modified chunk is written back so the world survives restarts; player data (position, inventory, gamemode) is persisted as JSON in <code>players/</code>.
+    </div>
+
+    <!-- Day/Night Cycle -->
+    <h2>Day/Night Cycle</h2>
+    <p>The world follows a <strong>24,000-tick day cycle</strong>, sent to clients via the <code>SetTime</code> packet. Time progresses each server tick when the <code>do_daylight_cycle</code> game rule is enabled.</p>
+
+    <table>
+      <thead>
+        <tr><th>Tick Range</th><th>Phase</th><th>Description</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><code>0 &ndash; 6,000</code></td><td>Morning</td><td>Sun rises, sky brightens</td></tr>
+        <tr><td><code>6,000 &ndash; 12,000</code></td><td>Midday</td><td>Full daylight</td></tr>
+        <tr><td><code>12,000 &ndash; 13,000</code></td><td>Sunset</td><td>Sun sets, sky dims</td></tr>
+        <tr><td><code>13,000 &ndash; 23,000</code></td><td>Night</td><td>Moon and stars visible</td></tr>
+        <tr><td><code>23,000 &ndash; 24,000</code></td><td>Sunrise</td><td>New day begins</td></tr>
+      </tbody>
+    </table>
+
+    <!-- Weather -->
+    <h2>Weather</h2>
+    <p>MC-RS supports three weather states: <strong>clear</strong>, <strong>rain</strong>, and <strong>thunder</strong>. Weather transitions are controlled by the <code>do_weather_cycle</code> game rule. When enabled, weather changes occur at random intervals. Weather state can also be set manually via the <code>/weather</code> command.</p>
+
+    <!-- Implemented -->
+    <h2>Implemented</h2>
+    <p>The world system now covers most of vanilla generation and interaction:</p>
+
+    <ul>
+      <li><strong>LevelDB persistence</strong> &mdash; modified chunks are written to disk and reloaded on restart.</li>
+      <li><strong>Simplex 3D terrain</strong> with 11 biomes classified from temperature/rainfall noise.</li>
+      <li><strong>Ores</strong> &mdash; depth-based vein placement.</li>
+      <li><strong>Trees</strong> &mdash; species per biome.</li>
+      <li><strong>Structures</strong> &mdash; villages, temples, mineshafts, strongholds, ocean monuments, Nether/End structures, and more.</li>
+      <li><strong>Multiple dimensions</strong> &mdash; Overworld, Nether and End.</li>
+      <li><strong>Block updates</strong> &mdash; server-authoritative break/place with broadcasts; random ticks for crop growth, fire, fluids, etc.</li>
+    </ul>
+
+    <div class="alert alert-warn">
+      <strong>In progress:</strong> full vanilla parity for every block behaviour and structure, plus performance tuning of generation and chunk streaming.
+    </div>
+
+  </div>
+</main>
+
+<footer class="site-footer">
+  MC-RS &mdash; Minecraft Bedrock Edition Server in Rust &mdash; <a href="https://github.com/pedrokarim/mc-rs">GitHub</a> &mdash; MIT License
+</footer>
+
+<script src="../nav.js"></script>
+<script src="../search-data.js"></script>
+<script src="../search.js"></script>
+</body>
+</html>

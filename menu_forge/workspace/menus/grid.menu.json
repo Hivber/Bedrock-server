@@ -1,0 +1,82 @@
+{
+  "formatVersion": 1,
+  "id": "grid",
+  "name": "Grid layout",
+  "form": {
+    "layout": "grid",
+    "title": "§6Grid layout",
+    "content": "§7Layout: button_grid_panel — grille verticale de boutons rectangulaires.",
+    "buttons": [
+      {
+        "id": "action_a",
+        "text": "§eAction A",
+        "onClick": [
+          {
+            "type": "open",
+            "menu": "showcase"
+          }
+        ]
+      },
+      {
+        "id": "action_b",
+        "text": "§eAction B",
+        "onClick": [
+          {
+            "type": "open",
+            "menu": "showcase"
+          }
+        ]
+      },
+      {
+        "id": "action_c",
+        "text": "§eAction C",
+        "onClick": [
+          {
+            "type": "open",
+            "menu": "showcase"
+          }
+        ]
+      },
+      {
+        "id": "action_d",
+        "text": "§eAction D",
+        "onClick": [
+          {
+            "type": "open",
+            "menu": "showcase"
+          }
+        ]
+      },
+      {
+        "id": "action_e",
+        "text": "§eAction E",
+        "onClick": [
+          {
+            "type": "open",
+            "menu": "showcase"
+          }
+        ]
+      },
+      {
+        "id": "action_f",
+        "text": "§eAction F",
+        "onClick": [
+          {
+            "type": "open",
+            "menu": "showcase"
+          }
+        ]
+      },
+      {
+        "id": "back",
+        "text": "§c↩ Retour",
+        "onClick": [
+          {
+            "type": "open",
+            "menu": "showcase"
+          }
+        ]
+      }
+    ]
+  }
+}

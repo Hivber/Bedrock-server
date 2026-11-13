@@ -1,0 +1,101 @@
+{
+  "formatVersion": 1,
+  "id": "store",
+  "name": "Store",
+  "form": {
+    "layout": "store",
+    "title": "§6Store",
+    "content": "§m§aPopulaire",
+    "buttons": [
+      {
+        "id": "tab_popular",
+        "text": "Populaire",
+        "role": "banner",
+        "onClick": [
+          {
+            "type": "open",
+            "menu": "showcase"
+          }
+        ]
+      },
+      {
+        "id": "tab_new",
+        "text": "Nouveautés",
+        "role": "banner",
+        "onClick": [
+          {
+            "type": "open",
+            "menu": "showcase"
+          }
+        ]
+      },
+      {
+        "id": "tab_sales",
+        "text": "Promotions",
+        "role": "banner",
+        "onClick": [
+          {
+            "type": "open",
+            "menu": "showcase"
+          }
+        ]
+      },
+      {
+        "id": "sword",
+        "text": "Épée légendaire",
+        "subtitle": "§a1500 coins",
+        "icon": {
+          "path": "textures/ui/mcrs/panels/loading_grid"
+        },
+        "onClick": [
+          {
+            "type": "open",
+            "menu": "showcase"
+          }
+        ]
+      },
+      {
+        "id": "pickaxe",
+        "text": "Pioche en diamant",
+        "subtitle": "§a800 coins",
+        "icon": {
+          "path": "textures/ui/mcrs/panels/loading_grid"
+        },
+        "onClick": [
+          {
+            "type": "open",
+            "menu": "showcase"
+          }
+        ]
+      },
+      {
+        "id": "skin",
+        "text": "Skin pirate",
+        "subtitle": "§a2000 coins",
+        "icon": {
+          "path": "textures/ui/mcrs/panels/loading_grid"
+        },
+        "onClick": [
+          {
+            "type": "open",
+            "menu": "showcase"
+          }
+        ]
+      },
+      {
+        "id": "cape",
+        "text": "Cape dragon",
+        "subtitle": "§a3500 coins",
+        "icon": {
+          "path": "textures/ui/mcrs/panels/loading_grid"
+        },
+        "onClick": [
+          {
+            "type": "open",
+            "menu": "showcase"
+          }
+        ]
+      }
+    ]
+  }
+}

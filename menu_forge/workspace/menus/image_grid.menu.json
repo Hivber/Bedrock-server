@@ -1,0 +1,78 @@
+{
+  "formatVersion": 1,
+  "id": "image_grid",
+  "name": "Image grid",
+  "form": {
+    "layout": "image_grid",
+    "title": "§6Image grid",
+    "content": "§7Grille d'images avec titre superposé. Idéal pour un sélecteur de map.",
+    "buttons": [
+      {
+        "id": "forest",
+        "text": "Forêt",
+        "subtitle": "§aDifficulté facile",
+        "icon": {
+          "path": "textures/ui/mcrs/panels/loading_grid"
+        },
+        "onClick": [
+          {
+            "type": "open",
+            "menu": "showcase"
+          }
+        ]
+      },
+      {
+        "id": "desert",
+        "text": "Désert",
+        "subtitle": "§eDifficulté moyenne",
+        "icon": {
+          "path": "textures/ui/mcrs/panels/loading_grid"
+        },
+        "onClick": [
+          {
+            "type": "open",
+            "menu": "showcase"
+          }
+        ]
+      },
+      {
+        "id": "mountain",
+        "text": "Montagne",
+        "subtitle": "§cDifficulté difficile",
+        "icon": {
+          "path": "textures/ui/mcrs/panels/loading_grid"
+        },
+        "onClick": [
+          {
+            "type": "open",
+            "menu": "showcase"
+          }
+        ]
+      },
+      {
+        "id": "swamp",
+        "text": "Marais",
+        "subtitle": "§eDifficulté moyenne",
+        "icon": {
+          "path": "textures/ui/mcrs/panels/loading_grid"
+        },
+        "onClick": [
+          {
+            "type": "open",
+            "menu": "showcase"
+          }
+        ]
+      },
+      {
+        "id": "back",
+        "text": "§c↩ Retour",
+        "onClick": [
+          {
+            "type": "open",
+            "menu": "showcase"
+          }
+        ]
+      }
+    ]
+  }
+}

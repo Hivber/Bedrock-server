@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Architecture — MC-RS Documentation</title>
+  <link rel="icon" type="image/png" href="../logo-simple.png">
+  <link rel="stylesheet" href="../style.css">
+</head>
+<body>
+
+<!-- Header -->
+<header class="site-header">
+  <button class="hamburger" aria-label="Menu">&#9776;</button>
+  <a href="../" class="header-logo">
+    <img src="../logo-clean.png" alt="MC-RS" class="header-logo-img" style="height:34px;width:auto">
+  </a>
+  <div class="search-wrapper">
+    <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+    <input type="text" class="search-input" placeholder="Search documentation...">
+    <span class="search-shortcut">/</span>
+    <div class="search-results"></div>
+  </div>
+</header>
+
+<!-- Sidebar -->
+<nav class="sidebar">
+  <div class="sidebar-section">
+    <div class="sidebar-section-title">Getting Started</div>
+    <a href="../" class="sidebar-link">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+      Home
+    </a>
+    <a href="overview.html" class="sidebar-link">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4m0-4h.01"/></svg>
+      Overview
+    </a>
+    <a href="architecture.html" class="sidebar-link active">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="6" height="6" rx="1"/><rect x="16" y="3" width="6" height="6" rx="1"/><rect x="16" y="15" width="6" height="6" rx="1"/><path d="M8 10h4m0 0v-4m0 4v4m0-4h4"/></svg>
+      Architecture
+    </a>
+  </div>
+  <div class="sidebar-section">
+    <div class="sidebar-section-title">Core Systems</div>
+    <a href="protocol.html" class="sidebar-link">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><polyline points="13 2 13 9 20 9"/></svg>
+      Protocol
+    </a>
+    <a href="networking.html" class="sidebar-link">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12.55a11 11 0 0 1 14.08 0"/><path d="M1.42 9a16 16 0 0 1 21.16 0"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0"/><circle cx="12" cy="20" r="1"/></svg>
+      Networking
+    </a>
+    <a href="world.html" class="sidebar-link">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+      World
+    </a>
+  </div>
+  <div class="sidebar-section">
+    <div class="sidebar-section-title">Features</div>
+    <a href="commands.html" class="sidebar-link">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>
+      Commands
+    </a>
+    <a href="configuration.html" class="sidebar-link">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+      Configuration
+    </a>
+  </div>
+  <div class="sidebar-section">
+    <div class="sidebar-section-title">Roadmap</div>
+    <a href="roadmap.html" class="sidebar-link">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+      Roadmap
+    </a>
+  </div>
+  <div class="sidebar-section">
+    <div class="sidebar-section-title">Extensions</div>
+    <a href="plugins.html" class="sidebar-link">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+      Plugins
+    </a>
+    <a href="web-panel.html" class="sidebar-link">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
+      Web Panel
+    </a>
+    <a href="resource-packs.html" class="sidebar-link">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
+      Resource Packs &amp; UI
+    </a>
+  </div>
+  <div class="sidebar-section">
+    <div class="sidebar-section-title">Links</div>
+    <a href="https://github.com/pedrokarim/mc-rs" class="sidebar-link" target="_blank" rel="noopener">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z"/></svg>
+      GitHub
+    </a>
+  </div>
+</nav>
+
+<div class="sidebar-overlay"></div>
+
+<!-- Main Content -->
+<main class="main-content">
+  <div class="content-inner">
+
+    <h1>Architecture</h1>
+    <p class="page-subtitle">7-crate workspace designed for modularity and clean separation of concerns.</p>
+
+    <!-- Crate Dependency Diagram -->
+    <h2>Crate Dependency Diagram</h2>
+    <p>The workspace is organized as a directed acyclic graph of crate dependencies. <code>mc-rs-server</code> sits at the top as the entry point, depending on all other crates.</p>
+
+    <div class="diagram">
+      <svg viewBox="0 0 700 320" xmlns="http://www.w3.org/2000/svg" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="13">
+        <defs>
+          <marker id="arrow" viewBox="0 0 10 7" refX="10" refY="3.5" markerWidth="8" markerHeight="6" orient="auto-start-reverse">
+            <polygon points="0 0, 10 3.5, 0 7" fill="#4ecca3" opacity="0.6"/>
+          </marker>
+        </defs>
+
+        <!-- Row 1: mc-rs-server (top center) -->
+        <rect x="240" y="10" width="220" height="40" rx="6" fill="#4ecca3"/>
+        <text x="350" y="35" text-anchor="middle" fill="#0f0f1a" font-weight="700" font-size="14">mc-rs-server</text>
+
+        <!-- Row 2: proto, raknet, crypto, command -->
+        <rect x="20" y="110" width="150" height="36" rx="6" fill="#4ecca3"/>
+        <text x="95" y="133" text-anchor="middle" fill="#0f0f1a" font-weight="600" font-size="12">mc-rs-proto</text>
+
+        <rect x="190" y="110" width="150" height="36" rx="6" fill="#4ecca3"/>
+        <text x="265" y="133" text-anchor="middle" fill="#0f0f1a" font-weight="600" font-size="12">mc-rs-raknet</text>
+
+        <rect x="360" y="110" width="150" height="36" rx="6" fill="#4ecca3"/>
+        <text x="435" y="133" text-anchor="middle" fill="#0f0f1a" font-weight="600" font-size="12">mc-rs-crypto</text>
+
+        <rect x="530" y="110" width="150" height="36" rx="6" fill="#4ecca3"/>
+        <text x="605" y="133" text-anchor="middle" fill="#0f0f1a" font-weight="600" font-size="12">mc-rs-command</text>
+
+        <!-- Row 3: nbt (used by proto) + webui -->
+        <rect x="180" y="210" width="140" height="36" rx="6" fill="#4ecca3"/>
+        <text x="250" y="233" text-anchor="middle" fill="#0f0f1a" font-weight="600" font-size="12">mc-rs-nbt</text>
+
+        <rect x="380" y="210" width="140" height="36" rx="6" fill="#4ecca3"/>
+        <text x="450" y="233" text-anchor="middle" fill="#0f0f1a" font-weight="600" font-size="12">mc-rs-webui</text>
+
+        <!-- Arrows: server → row 2 -->
+        <line x1="290" y1="50" x2="95" y2="110" stroke="#4ecca3" stroke-width="1.5" opacity="0.4" marker-end="url(#arrow)"/>
+        <line x1="320" y1="50" x2="265" y2="110" stroke="#4ecca3" stroke-width="1.5" opacity="0.4" marker-end="url(#arrow)"/>
+        <line x1="380" y1="50" x2="435" y2="110" stroke="#4ecca3" stroke-width="1.5" opacity="0.4" marker-end="url(#arrow)"/>
+        <line x1="410" y1="50" x2="605" y2="110" stroke="#4ecca3" stroke-width="1.5" opacity="0.4" marker-end="url(#arrow)"/>
+
+        <!-- Arrow: server → nbt + webui -->
+        <line x1="340" y1="50" x2="250" y2="210" stroke="#4ecca3" stroke-width="1.5" opacity="0.3" marker-end="url(#arrow)"/>
+        <line x1="360" y1="50" x2="450" y2="210" stroke="#4ecca3" stroke-width="1.5" opacity="0.3" marker-end="url(#arrow)"/>
+
+        <!-- Arrow: proto → nbt -->
+        <line x1="95" y1="146" x2="210" y2="210" stroke="#4ecca3" stroke-width="1.5" opacity="0.4" marker-end="url(#arrow)"/>
+
+        <!-- Legend -->
+        <rect x="20" y="270" width="240" height="40" rx="8" fill="#1a1a2e" stroke="#2a2a45" stroke-width="1"/>
+        <line x1="40" y1="290" x2="80" y2="290" stroke="#4ecca3" stroke-width="2" opacity="0.5" marker-end="url(#arrow)"/>
+        <text x="90" y="294" fill="#9a9ab0" font-size="12">depends on</text>
+        <rect x="170" y="283" width="30" height="14" rx="3" fill="#4ecca3"/>
+        <text x="210" y="294" fill="#9a9ab0" font-size="12">crate</text>
+      </svg>
+    </div>
+
+    <!-- Crate Details -->
+    <h2>Crate Details</h2>
+
+    <h3><code>mc-rs-server</code></h3>
+    <p>The main binary crate (~75K lines) and the heart of the project. Hosts the <strong>tokio async runtime</strong>, the per-connection state machine, and the event loop running at <strong>100 server TPS</strong> (10&nbsp;ms) with the game tick at <strong>20 TPS</strong> (1 game tick = 5 server ticks). Beyond orchestration it contains the entire gameplay layer: world generation (Simplex 3D + flat), LevelDB chunk persistence, the inventory manager, crafting, combat &amp; survival, the entity/mob system with AI, block behaviours, structures, redstone, the command handlers, the Lua plugin runtime, and RCON/Query servers.</p>
+
+    <h3><code>mc-rs-proto</code></h3>
+    <p>Implements the Bedrock packet types with manual <code>encode</code>/<code>decode</code> implementations. Provides the <code>VarInt</code>/<code>VarLong</code> zigzag codec, <code>VarUInt32</code>/<code>VarUInt64</code>, zlib and snappy compression, and batch framing. Large payloads like biome definitions and entity identifiers are embedded via <code>include_bytes!</code>.</p>
+
+    <h3><code>mc-rs-raknet</code></h3>
+    <p>Full <strong>RakNet UDP transport</strong> implementation. Handles reliability layers (reliable, reliable-ordered, unreliable), packet fragmentation and reassembly, sequence/ordering channels, acknowledgments (ACK/NAK), congestion control, and MOTD formatting. This is the lowest-level network layer that sits between raw UDP sockets and the protocol codec.</p>
+
+    <h3><code>mc-rs-crypto</code></h3>
+    <p>Provides <strong>ECDH P-384 key exchange</strong> for the encryption handshake, <strong>AES-256-CTR</strong> stream cipher for ongoing packet encryption, and <strong>JWT parsing</strong> for validating Xbox Live authentication chains during login. Supports both online (Xbox Live) and offline authentication modes.</p>
+
+    <h3><code>mc-rs-nbt</code></h3>
+    <p>Implements the <strong>NBT (Named Binary Tag)</strong> serialization format in both little-endian (disk) and network (ZigZag VarInt) variants. Supports all tag types: compound, list, byte/int/long arrays, strings, and numeric types. Used by the protocol layer for block entity data, item NBT, and metadata blobs.</p>
+
+    <h3><code>mc-rs-command</code></h3>
+    <p>A <strong>generic command engine</strong>: the command map, argument parser, permission registry, entity selectors (<code>@p</code>, <code>@a</code>, <code>@e</code>, …) and typed-argument traits. The <strong>65 command handlers</strong> themselves live in <code>mc-rs-server</code> (<code>src/commands/</code>, one file per command, PMMP structure) and call back into the engine. Relative coordinates (<code>~</code>) and tab-completion via the <code>AvailableCommands</code> packet are supported.</p>
+
+    <h3><code>mc-rs-webui</code></h3>
+    <p>A self-contained <strong>web admin panel</strong> built on Axum. Provides JWT-authenticated login, a SQLite backend (Postgres/Mongo planned), live server metrics streamed over WebSocket, a console proxy, player and user management, a world view, and an audit log. The main server pushes a shared snapshot ~20&nbsp;times per second into this crate.</p>
+
+    <!-- Data Flow -->
+    <h2>Data Flow</h2>
+    <p>Every packet follows a consistent pipeline through the server:</p>
+
+    <div class="alert alert-info">
+      <strong>Inbound:</strong> Client &rarr; UDP Socket &rarr; RakNet (reassemble, order) &rarr; Decrypt (AES-256-CTR) &rarr; Decompress (zlib/snappy) &rarr; Batch Split &rarr; Packet Decode &rarr; ConnectionHandler
+    </div>
+
+    <div class="alert alert-info">
+      <strong>Outbound:</strong> ConnectionHandler &rarr; Packet Encode &rarr; Batch &rarr; Compress (zlib/snappy) &rarr; Encrypt (AES-256-CTR) &rarr; RakNet (fragment, reliability) &rarr; UDP Socket &rarr; Client
+    </div>
+
+    <p>The <code>ConnectionHandler</code> is a state machine with well-defined states:</p>
+    <ol>
+      <li><strong>SessionStart</strong> &mdash; Waiting for <code>RequestNetworkSettings</code></li>
+      <li><strong>Login</strong> &mdash; JWT verification, identity extraction</li>
+      <li><strong>Encryption</strong> &mdash; ECDH key exchange, encryption negotiation</li>
+      <li><strong>ResourcePacks</strong> &mdash; Resource-pack info, chunked download, SHA-256 verify, stack confirm</li>
+      <li><strong>PreSpawn</strong> &mdash; StartGame, chunk loading, biome definitions, creative content</li>
+      <li><strong>SpawnResponse</strong> &mdash; Waiting for the client to confirm it is initialized</li>
+      <li><strong>InGame</strong> &mdash; Full gameplay (movement, blocks, inventory, chat, commands)</li>
+    </ol>
+    <p>Each state only accepts its valid set of packet types. Any out-of-state packet is rejected, preventing protocol exploits.</p>
+
+    <!-- Threading Model -->
+    <h2>Threading Model</h2>
+    <p>MC-RS uses a <strong>single-task async model</strong> built on tokio:</p>
+
+    <ul>
+      <li><strong>Network I/O</strong> &mdash; A single tokio task handles all UDP socket reads/writes via the RakNet layer. Each client connection is a <code>ConnectionHandler</code> struct (not a separate task), processed cooperatively in the main loop.</li>
+      <li><strong>Tick rates</strong> &mdash; The event loop runs at <strong>100 server TPS</strong> (10&nbsp;ms) for responsive networking; the game logic ticks at <strong>20 TPS</strong> (1 game tick every 5 server ticks). This avoids cross-thread state synchronization.</li>
+      <li><strong>No per-client tasks</strong> &mdash; All clients are handled within the same async loop. The server iterates over connections, processes incoming packets, and sends outgoing responses in each tick cycle.</li>
+      <li><strong>Persistence</strong> &mdash; Chunks are stored in LevelDB; player data (position, inventory, gamemode) is saved on disconnect and at periodic intervals.</li>
+      <li><strong>Web panel</strong> &mdash; The <code>mc-rs-webui</code> Axum server runs as a separate tokio task and reads a shared snapshot, so it never blocks the game loop.</li>
+    </ul>
+
+    <div class="alert alert-warn">
+      <strong>Design choice:</strong> The single-task model was chosen over per-connection tasks to avoid the complexity of synchronizing shared game state across threads. With 20 TPS and efficient packet batching, a single task comfortably handles multiple concurrent players.
+    </div>
+
+  </div>
+</main>
+
+<footer class="site-footer">
+  MC-RS &mdash; Minecraft Bedrock Edition Server in Rust &mdash; <a href="https://github.com/pedrokarim/mc-rs">GitHub</a> &mdash; MIT License
+</footer>
+
+<script src="../nav.js"></script>
+<script src="../search-data.js"></script>
+<script src="../search.js"></script>
+</body>
+</html>

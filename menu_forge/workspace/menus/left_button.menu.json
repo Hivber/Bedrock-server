@@ -1,0 +1,62 @@
+{
+  "formatVersion": 1,
+  "id": "left_button",
+  "name": "Left buttons",
+  "form": {
+    "layout": "left_button",
+    "title": "§6Left buttons",
+    "content": "§7Liste de boutons à gauche, description à droite. Survole un bouton pour afficher son texte.",
+    "buttons": [
+      {
+        "id": "ranked",
+        "text": "§ePartie classée",
+        "onClick": [
+          {
+            "type": "open",
+            "menu": "showcase"
+          }
+        ]
+      },
+      {
+        "id": "quick",
+        "text": "§ePartie rapide",
+        "onClick": [
+          {
+            "type": "open",
+            "menu": "showcase"
+          }
+        ]
+      },
+      {
+        "id": "tutorial",
+        "text": "§eTutoriel",
+        "onClick": [
+          {
+            "type": "open",
+            "menu": "showcase"
+          }
+        ]
+      },
+      {
+        "id": "settings",
+        "text": "§eParamètres",
+        "onClick": [
+          {
+            "type": "open",
+            "menu": "showcase"
+          }
+        ]
+      },
+      {
+        "id": "back",
+        "text": "§c↩ Retour",
+        "onClick": [
+          {
+            "type": "open",
+            "menu": "showcase"
+          }
+        ]
+      }
+    ]
+  }
+}

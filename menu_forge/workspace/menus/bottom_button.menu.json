@@ -1,0 +1,59 @@
+{
+  "formatVersion": 1,
+  "id": "bottom_button",
+  "name": "Bottom buttons",
+  "form": {
+    "layout": "bottom_button",
+    "title": "§6Bottom buttons",
+    "content": "§7Bannière en haut, liste de boutons en bas. Mise en scène d'un mode de jeu.",
+    "buttons": [
+      {
+        "id": "banner",
+        "text": "Mode Bedwars",
+        "role": "banner",
+        "onClick": [
+          {
+            "type": "close"
+          }
+        ]
+      },
+      {
+        "id": "join_solo",
+        "text": "§eRejoindre solo",
+        "onClick": [
+          {
+            "type": "close"
+          }
+        ]
+      },
+      {
+        "id": "join_duo",
+        "text": "§eRejoindre duo",
+        "onClick": [
+          {
+            "type": "close"
+          }
+        ]
+      },
+      {
+        "id": "join_squad",
+        "text": "§eRejoindre squad",
+        "onClick": [
+          {
+            "type": "close"
+          }
+        ]
+      },
+      {
+        "id": "back",
+        "text": "§c↩ Retour",
+        "onClick": [
+          {
+            "type": "open",
+            "menu": "showcase"
+          }
+        ]
+      }
+    ]
+  }
+}

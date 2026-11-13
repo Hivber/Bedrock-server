@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Commands — MC-RS Documentation</title>
+  <link rel="icon" type="image/png" href="../logo-simple.png">
+  <link rel="stylesheet" href="../style.css">
+</head>
+<body>
+
+<!-- Header -->
+<header class="site-header">
+  <button class="hamburger" aria-label="Menu">&#9776;</button>
+  <a href="../" class="header-logo">
+    <img src="../logo-clean.png" alt="MC-RS" class="header-logo-img" style="height:34px;width:auto">
+  </a>
+  <div class="search-wrapper">
+    <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+    <input type="text" class="search-input" placeholder="Search documentation...">
+    <span class="search-shortcut">/</span>
+    <div class="search-results"></div>
+  </div>
+</header>
+
+<!-- Sidebar -->
+<nav class="sidebar">
+  <div class="sidebar-section">
+    <div class="sidebar-section-title">Getting Started</div>
+    <a href="../" class="sidebar-link">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+      Home
+    </a>
+    <a href="overview.html" class="sidebar-link">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4m0-4h.01"/></svg>
+      Overview
+    </a>
+    <a href="architecture.html" class="sidebar-link">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="6" height="6" rx="1"/><rect x="16" y="3" width="6" height="6" rx="1"/><rect x="16" y="15" width="6" height="6" rx="1"/><path d="M8 10h4m0 0v-4m0 4v4m0-4h4"/></svg>
+      Architecture
+    </a>
+  </div>
+  <div class="sidebar-section">
+    <div class="sidebar-section-title">Core Systems</div>
+    <a href="protocol.html" class="sidebar-link">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><polyline points="13 2 13 9 20 9"/></svg>
+      Protocol
+    </a>
+    <a href="networking.html" class="sidebar-link">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12.55a11 11 0 0 1 14.08 0"/><path d="M1.42 9a16 16 0 0 1 21.16 0"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0"/><circle cx="12" cy="20" r="1"/></svg>
+      Networking
+    </a>
+    <a href="world.html" class="sidebar-link">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+      World
+    </a>
+  </div>
+  <div class="sidebar-section">
+    <div class="sidebar-section-title">Features</div>
+    <a href="commands.html" class="sidebar-link active">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>
+      Commands
+    </a>
+    <a href="configuration.html" class="sidebar-link">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+      Configuration
+    </a>
+  </div>
+  <div class="sidebar-section">
+    <div class="sidebar-section-title">Roadmap</div>
+    <a href="roadmap.html" class="sidebar-link">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+      Roadmap
+    </a>
+  </div>
+  <div class="sidebar-section">
+    <div class="sidebar-section-title">Extensions</div>
+    <a href="plugins.html" class="sidebar-link">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+      Plugins
+    </a>
+    <a href="web-panel.html" class="sidebar-link">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
+      Web Panel
+    </a>
+    <a href="resource-packs.html" class="sidebar-link">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
+      Resource Packs &amp; UI
+    </a>
+  </div>
+  <div class="sidebar-section">
+    <div class="sidebar-section-title">Links</div>
+    <a href="https://github.com/pedrokarim/mc-rs" class="sidebar-link" target="_blank" rel="noopener">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z"/></svg>
+      GitHub
+    </a>
+  </div>
+</nav>
+
+<div class="sidebar-overlay"></div>
+
+<!-- Main Content -->
+<main class="main-content">
+  <div class="content-inner">
+
+    <h1>Commands</h1>
+    <p class="page-subtitle">65 built-in commands with tab-complete, entity selectors and relative coordinates.</p>
+
+    <!-- Command Reference -->
+    <h2>Command Reference</h2>
+    <p>All commands are prefixed with <code>/</code> and executed from in-game chat (or the server console / RCON). Arguments in <code>&lt;angle brackets&gt;</code> are required, arguments in <code>[square brackets]</code> are optional. Each command is a faithful port of its PocketMine-MP / vanilla counterpart.</p>
+
+    <h3>World &amp; blocks</h3>
+    <table>
+      <thead><tr><th>Command</th><th>Description</th></tr></thead>
+      <tbody>
+        <tr><td><code>/setblock</code></td><td>Place a block at a position</td></tr>
+        <tr><td><code>/fill</code></td><td>Fill a region with a block</td></tr>
+        <tr><td><code>/clone</code></td><td>Copy a region of blocks to another location</td></tr>
+        <tr><td><code>/locate</code></td><td>Locate the nearest structure</td></tr>
+        <tr><td><code>/setworldspawn</code></td><td>Set the world spawn point</td></tr>
+        <tr><td><code>/spawnpoint</code></td><td>Set a player's personal spawn point</td></tr>
+        <tr><td><code>/spreadplayers</code></td><td>Scatter players randomly around a center</td></tr>
+        <tr><td><code>/seed</code></td><td>Show the world seed</td></tr>
+        <tr><td><code>/setblock</code>, <code>/fill</code>, <code>/clone</code></td><td>Support <code>~</code> relative and block-state arguments</td></tr>
+      </tbody>
+    </table>
+
+    <h3>Player &amp; inventory</h3>
+    <table>
+      <thead><tr><th>Command</th><th>Description</th></tr></thead>
+      <tbody>
+        <tr><td><code>/tp</code></td><td>Teleport to coordinates or another entity (relative <code>~</code> supported)</td></tr>
+        <tr><td><code>/gamemode</code></td><td>Change a player's game mode</td></tr>
+        <tr><td><code>/defaultgamemode</code></td><td>Set the default game mode for new players</td></tr>
+        <tr><td><code>/give</code></td><td>Give an item to a player</td></tr>
+        <tr><td><code>/clear</code></td><td>Clear a player's inventory</td></tr>
+        <tr><td><code>/replaceitem</code></td><td>Replace an item in an inventory slot</td></tr>
+        <tr><td><code>/effect</code></td><td>Add or remove a status effect</td></tr>
+        <tr><td><code>/enchant</code></td><td>Enchant the held item</td></tr>
+        <tr><td><code>/xp</code></td><td>Grant or remove experience</td></tr>
+        <tr><td><code>/damage</code></td><td>Deal damage to an entity</td></tr>
+        <tr><td><code>/kill</code></td><td>Kill an entity or player</td></tr>
+        <tr><td><code>/ability</code></td><td>Toggle a player ability</td></tr>
+        <tr><td><code>/menu</code></td><td>Open the custom UI hub (and <code>/menu &lt;panel&gt;</code> for each layout)</td></tr>
+      </tbody>
+    </table>
+
+    <h3>Entities</h3>
+    <table>
+      <thead><tr><th>Command</th><th>Description</th></tr></thead>
+      <tbody>
+        <tr><td><code>/summon</code></td><td>Spawn an entity</td></tr>
+        <tr><td><code>/loot</code></td><td>Generate loot from a loot table</td></tr>
+        <tr><td><code>/tag</code></td><td>Manage entity tags</td></tr>
+        <tr><td><code>/testfor</code></td><td>Count entities matching a selector</td></tr>
+        <tr><td><code>/testforblock</code></td><td>Test whether a block matches at a position</td></tr>
+      </tbody>
+    </table>
+
+    <h3>World rules &amp; environment</h3>
+    <table>
+      <thead><tr><th>Command</th><th>Description</th></tr></thead>
+      <tbody>
+        <tr><td><code>/time</code></td><td>Set or query the world time</td></tr>
+        <tr><td><code>/weather</code></td><td>Set the weather (clear / rain / thunder)</td></tr>
+        <tr><td><code>/difficulty</code></td><td>Set the world difficulty</td></tr>
+        <tr><td><code>/gamerule</code></td><td>Get or set a game rule</td></tr>
+      </tbody>
+    </table>
+
+    <h3>Chat &amp; social</h3>
+    <table>
+      <thead><tr><th>Command</th><th>Description</th></tr></thead>
+      <tbody>
+        <tr><td><code>/say</code></td><td>Broadcast a message to all players</td></tr>
+        <tr><td><code>/me</code></td><td>Broadcast an action message</td></tr>
+        <tr><td><code>/tell</code></td><td>Send a private message</td></tr>
+        <tr><td><code>/tellraw</code></td><td>Send a raw JSON message</td></tr>
+        <tr><td><code>/title</code></td><td>Show a title / subtitle / actionbar</td></tr>
+        <tr><td><code>/list</code></td><td>Show all online players</td></tr>
+      </tbody>
+    </table>
+
+    <h3>Audio &amp; effects</h3>
+    <table>
+      <thead><tr><th>Command</th><th>Description</th></tr></thead>
+      <tbody>
+        <tr><td><code>/playsound</code></td><td>Play a sound event</td></tr>
+        <tr><td><code>/stopsound</code></td><td>Stop a playing sound</td></tr>
+        <tr><td><code>/music</code></td><td>Control background music</td></tr>
+        <tr><td><code>/particle</code></td><td>Spawn a particle effect</td></tr>
+      </tbody>
+    </table>
+
+    <h3>Scoreboard &amp; display</h3>
+    <table>
+      <thead><tr><th>Command</th><th>Description</th></tr></thead>
+      <tbody>
+        <tr><td><code>/scoreboard</code></td><td>Manage objectives, scores and display slots</td></tr>
+        <tr><td><code>/boss</code></td><td>Manage a boss bar</td></tr>
+      </tbody>
+    </table>
+
+    <h3>Moderation &amp; permissions</h3>
+    <table>
+      <thead><tr><th>Command</th><th>Description</th></tr></thead>
+      <tbody>
+        <tr><td><code>/op</code> / <code>/deop</code></td><td>Grant or revoke operator status</td></tr>
+        <tr><td><code>/ban</code> / <code>/pardon</code></td><td>Ban or unban a player by name</td></tr>
+        <tr><td><code>/ban-ip</code> / <code>/pardon-ip</code></td><td>Ban or unban an IP address</td></tr>
+        <tr><td><code>/banlist</code></td><td>List banned players / IPs</td></tr>
+        <tr><td><code>/kick</code></td><td>Kick a player</td></tr>
+        <tr><td><code>/whitelist</code></td><td>Manage the whitelist</td></tr>
+        <tr><td><code>/transferserver</code></td><td>Send a player to another server</td></tr>
+      </tbody>
+    </table>
+
+    <h3>Server administration</h3>
+    <table>
+      <thead><tr><th>Command</th><th>Description</th></tr></thead>
+      <tbody>
+        <tr><td><code>/stop</code></td><td>Stop the server gracefully</td></tr>
+        <tr><td><code>/save</code> / <code>/save-on</code> / <code>/save-off</code></td><td>Save the world / toggle auto-save</td></tr>
+        <tr><td><code>/reload</code></td><td>Reload configuration and plugins</td></tr>
+        <tr><td><code>/status</code></td><td>Show server status (uptime, TPS, players)</td></tr>
+        <tr><td><code>/timings</code></td><td>Profiling / timings report</td></tr>
+        <tr><td><code>/version</code></td><td>Show server version and protocol</td></tr>
+        <tr><td><code>/plugins</code></td><td>List loaded plugins</td></tr>
+        <tr><td><code>/gc</code></td><td>Trigger a memory cleanup pass</td></tr>
+        <tr><td><code>/dumpmemory</code></td><td>Dump memory diagnostics</td></tr>
+        <tr><td><code>/event</code></td><td>Fire a test event (plugin debugging)</td></tr>
+        <tr><td><code>/help</code></td><td>List commands or show details about one</td></tr>
+      </tbody>
+    </table>
+
+    <div class="alert alert-info">
+      <strong>Note:</strong> command availability per player is filtered by permission, and the <code>AvailableCommands</code> packet drives client-side tab-completion (including enum arguments such as game modes, difficulties and the <code>/menu</code> panel names).
+    </div>
+
+    <!-- Command engine -->
+    <h2>Command Engine</h2>
+    <p>The generic command engine lives in the <code>mc-rs-command</code> crate: the command map, argument parser, permission registry, and entity selectors. The 65 handlers themselves live in <code>mc-rs-server/src/commands/</code> &mdash; one file per command, mirroring PocketMine's <code>src/command/defaults/</code> layout &mdash; and drive the world through a <code>ServerCommandRuntime</code> trait:</p>
+
+    <pre><code><span class="kw">pub trait</span> <span class="ty">ServerCommandRuntime</span> {
+    <span class="kw">fn</span> teleport_player(&amp;<span class="kw">mut</span> self, addr: SocketAddr, pos: [f32; 3]);
+    <span class="kw">fn</span> set_player_gamemode(&amp;<span class="kw">mut</span> self, addr: SocketAddr, mode: i32);
+    <span class="kw">fn</span> give_item(&amp;<span class="kw">mut</span> self, addr: SocketAddr, item: ItemStack) -&gt; <span class="ty">Result</span>&lt;(), String&gt;;
+    <span class="kw">fn</span> set_time(&amp;<span class="kw">mut</span> self, time: i32);
+    <span class="cm">// … one method per side-effect a command needs</span>
+}</code></pre>
+
+    <p>This keeps the engine reusable and testable: handlers are pure functions over the runtime trait, and a mock runtime backs the command unit tests.</p>
+
+    <!-- Relative Coordinates -->
+    <h2>Relative Coordinates</h2>
+    <p>The <code>/tp</code> command supports Minecraft's tilde (<code>~</code>) notation for relative coordinates. Each axis can independently be absolute or relative to the player's current position:</p>
+
+    <table>
+      <thead>
+        <tr><th>Example</th><th>Meaning</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><code>/tp 100 64 200</code></td><td>Teleport to absolute position (100, 64, 200)</td></tr>
+        <tr><td><code>/tp ~ ~10 ~</code></td><td>Teleport 10 blocks up from current position</td></tr>
+        <tr><td><code>/tp ~5 ~ ~-3</code></td><td>Move 5 blocks on X, stay at same Y, move -3 on Z</td></tr>
+        <tr><td><code>/tp ~ 100 ~</code></td><td>Keep X and Z, set Y to 100</td></tr>
+      </tbody>
+    </table>
+
+    <div class="alert alert-info">
+      <strong>Tip:</strong> Using <code>~</code> alone (without a number) is equivalent to <code>~0</code> &mdash; it keeps the player's current coordinate on that axis.
+    </div>
+
+    <!-- Game Modes -->
+    <h2>Game Modes</h2>
+    <p>The <code>/gamemode</code> command accepts either a numeric ID or a name:</p>
+
+    <table>
+      <thead>
+        <tr><th>ID</th><th>Name</th><th>Description</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><code>0</code></td><td><code>survival</code></td><td>Survival mode &mdash; gather resources, health, hunger</td></tr>
+        <tr><td><code>1</code></td><td><code>creative</code></td><td>Creative mode &mdash; unlimited blocks, flying, no damage</td></tr>
+        <tr><td><code>2</code></td><td><code>adventure</code></td><td>Adventure mode &mdash; cannot break/place blocks freely</td></tr>
+        <tr><td><code>3</code></td><td><code>spectator</code></td><td>Spectator mode &mdash; invisible, fly through blocks</td></tr>
+      </tbody>
+    </table>
+
+    <!-- Time Values -->
+    <h2>Time Values</h2>
+    <p>The <code>/time set</code> command accepts named presets or a numeric tick value (0&ndash;24000):</p>
+
+    <table>
+      <thead>
+        <tr><th>Preset</th><th>Tick Value</th><th>Description</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><code>day</code></td><td>1000</td><td>Early morning, sun is up</td></tr>
+        <tr><td><code>noon</code></td><td>6000</td><td>Midday, sun at highest point</td></tr>
+        <tr><td><code>sunset</code></td><td>12000</td><td>Sun setting, mobs begin spawning</td></tr>
+        <tr><td><code>night</code></td><td>13000</td><td>Night time, full darkness</td></tr>
+      </tbody>
+    </table>
+
+    <p>You can also pass any integer value directly: <code>/time set 18000</code> sets midnight.</p>
+
+    <!-- Difficulty -->
+    <h2>Difficulty Levels</h2>
+    <p>The <code>/difficulty</code> command accepts either a numeric ID or a name:</p>
+
+    <table>
+      <thead>
+        <tr><th>ID</th><th>Name</th><th>Description</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><code>0</code></td><td><code>peaceful</code></td><td>No hostile mobs, health regenerates</td></tr>
+        <tr><td><code>1</code></td><td><code>easy</code></td><td>Hostile mobs deal less damage</td></tr>
+        <tr><td><code>2</code></td><td><code>normal</code></td><td>Standard difficulty</td></tr>
+        <tr><td><code>3</code></td><td><code>hard</code></td><td>Hostile mobs deal more damage, hunger can kill</td></tr>
+      </tbody>
+    </table>
+
+    <!-- Weather Types -->
+    <h2>Weather Types</h2>
+    <p>The <code>/weather</code> command accepts one of three weather types:</p>
+
+    <table>
+      <thead>
+        <tr><th>Type</th><th>Description</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><code>clear</code></td><td>Clear skies, no precipitation</td></tr>
+        <tr><td><code>rain</code></td><td>Rain (or snow in cold biomes)</td></tr>
+        <tr><td><code>thunder</code></td><td>Thunderstorm with lightning</td></tr>
+      </tbody>
+    </table>
+
+    <div class="alert alert-warn">
+      <strong>Note:</strong> Weather changes require <code>do_weather_cycle</code> to be enabled in the server configuration, or the weather will reset on the next cycle tick.
+    </div>
+
+  </div>
+</main>
+
+<footer class="site-footer">
+  MC-RS &mdash; Minecraft Bedrock Edition Server in Rust &mdash; <a href="https://github.com/pedrokarim/mc-rs">GitHub</a> &mdash; MIT License
+</footer>
+
+<script src="../nav.js"></script>
+<script src="../search-data.js"></script>
+<script src="../search.js"></script>
+</body>
+</html>

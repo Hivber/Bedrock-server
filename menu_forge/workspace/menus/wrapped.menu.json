@@ -1,0 +1,74 @@
+{
+  "formatVersion": 1,
+  "id": "wrapped",
+  "name": "Wrapped",
+  "form": {
+    "layout": "wrapped",
+    "title": "§6Wrapped",
+    "content": "https://mcrs.io/recap/2026",
+    "buttons": [
+      {
+        "id": "image_1",
+        "text": "Image 1",
+        "role": "banner",
+        "icon": {
+          "path": "textures/ui/mcrs/panels/loading_grid"
+        },
+        "onClick": [
+          {
+            "type": "open",
+            "menu": "showcase"
+          }
+        ]
+      },
+      {
+        "id": "image_2",
+        "text": "Image 2",
+        "role": "banner",
+        "icon": {
+          "path": "textures/ui/mcrs/panels/loading_grid"
+        },
+        "onClick": [
+          {
+            "type": "open",
+            "menu": "showcase"
+          }
+        ]
+      },
+      {
+        "id": "image_3",
+        "text": "Image 3",
+        "role": "banner",
+        "icon": {
+          "path": "textures/ui/mcrs/panels/loading_grid"
+        },
+        "onClick": [
+          {
+            "type": "open",
+            "menu": "showcase"
+          }
+        ]
+      },
+      {
+        "id": "continue",
+        "text": "§eContinuer",
+        "onClick": [
+          {
+            "type": "open",
+            "menu": "showcase"
+          }
+        ]
+      },
+      {
+        "id": "close",
+        "text": "§cFermer",
+        "onClick": [
+          {
+            "type": "open",
+            "menu": "showcase"
+          }
+        ]
+      }
+    ]
+  }
+}
