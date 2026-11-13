@@ -443,16 +443,13 @@ impl Connection {
             }
         }
 
+        // Gophertunnel Listener has already sent LoginSuccess, an empty
+        // ResourcePacksInfo and ResourcePackStack, and handled the client's
+        // cache/resource-pack negotiation. The final stack-completed response
+        // is forwarded by the Go PacketFunc; MC-RS then sends its own PreSpawn.
+        // Do not emit a duplicate login/resource-pack sequence here.
         self.state = ConnectionState::ResourcePacks;
-        let login_success = mc_rs_proto::packets::login::PlayStatus {
-            status: mc_rs_proto::packets::login::PlayStatusType::LoginSuccess,
-        };
-        let mut initial_packets = vec![self.encode_compressed_packet(
-            packet_id::PLAY_STATUS,
-            &login_success.encode(),
-        )];
-        initial_packets.extend(self.send_resource_packs_info());
-        Ok(initial_packets)
+        Ok(Vec::new())
     }
 
     /// Handle one already-decrypted, already-decompressed packet from

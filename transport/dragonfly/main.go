@@ -62,6 +62,22 @@ func main() {
 		AllowUnknownPackets:     true,
 		AllowInvalidPackets:     true,
 		FlushRate:               50 * time.Millisecond,
+		// Gophertunnel consumes resource-pack negotiation internally. Notify
+		// MC-RS when the client confirms the empty pack stack, so Rust can
+		// begin its original PreSpawn/StartGame sequence without duplicating
+		// LoginSuccess or ResourcePacksInfo.
+		PacketFunc: func(header packet.Header, payload []byte, src, dst net.Addr) {
+			if header.PacketID != packet.IDResourcePackClientResponse || src == nil || !isResourcePackStackFinished(payload) {
+				return
+			}
+			queue := sessionSignalQueue(src.String())
+			raw := encodePacket(header, payload)
+			select {
+			case queue <- raw:
+			default:
+				logger.Warn("resource-pack completion signal queue is full", "remote", src)
+			}
+		},
 	}
 	listener, err := cfg.Listen("raknet", *bind)
 	if err != nil {
@@ -104,8 +120,35 @@ func main() {
 	logger.Info("transport stopped")
 }
 
+var sessionSignals sync.Map // remote address -> buffered resource-pack completion events
+
+func sessionSignalQueue(remote string) chan []byte {
+	value, _ := sessionSignals.LoadOrStore(remote, make(chan []byte, 16))
+	return value.(chan []byte)
+}
+
+func isResourcePackStackFinished(payload []byte) bool {
+	reader := bytes.NewReader(payload)
+	response, err := binary.ReadUvarint(reader)
+	return err == nil && response == packet.PackResponseCompleted
+}
+
+// encodePacket reconstructs a complete Bedrock packet header and payload.
+func encodePacket(header packet.Header, payload []byte) []byte {
+	id := header.PacketID | (uint32(header.SenderSubClient) << 10) | (uint32(header.TargetSubClient) << 12)
+	var encoded [10]byte
+	n := binary.PutUvarint(encoded[:], uint64(id))
+	raw := make([]byte, n+len(payload))
+	copy(raw, encoded[:n])
+	copy(raw[n:], payload)
+	return raw
+}
+
 func serveSession(ctx context.Context, conn *minecraft.Conn, socketPath string) error {
 	defer conn.Close()
+	remoteKey := conn.RemoteAddr().String()
+	controlPackets := sessionSignalQueue(remoteKey)
+	defer sessionSignals.CompareAndDelete(remoteKey, controlPackets)
 	ipc, err := dialRust(ctx, socketPath)
 	if err != nil {
 		return fmt.Errorf("connect Rust runtime: %w", err)
@@ -135,6 +178,13 @@ func serveSession(ctx context.Context, conn *minecraft.Conn, socketPath string) 
 		return fmt.Errorf("send session metadata: %w", err)
 	}
 
+	var ipcWriteMu sync.Mutex
+	writeIPC := func(raw []byte) error {
+		ipcWriteMu.Lock()
+		defer ipcWriteMu.Unlock()
+		return writeFrame(ipc, raw)
+	}
+
 	readErr := make(chan error, 1)
 	go func() {
 		defer close(readErr)
@@ -145,9 +195,25 @@ func serveSession(ctx context.Context, conn *minecraft.Conn, socketPath string) 
 				_ = ipc.Close()
 				return
 			}
-			if err := writeFrame(ipc, raw); err != nil {
+			if err := writeIPC(raw); err != nil {
 				readErr <- fmt.Errorf("forward client packet: %w", err)
 				_ = ipc.Close()
+				return
+			}
+		}
+	}()
+	go func() {
+		for {
+			select {
+			case raw := <-controlPackets:
+				if err := writeIPC(raw); err != nil {
+					readErr <- fmt.Errorf("forward resource-pack completion: %w", err)
+					_ = ipc.Close()
+					return
+				}
+			case <-sessionDone:
+				return
+			case <-ctx.Done():
 				return
 			}
 		}
