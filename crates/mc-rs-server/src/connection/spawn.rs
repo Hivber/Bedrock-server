@@ -297,6 +297,7 @@ impl Connection {
             entity_id: self.entity_runtime_id as i64,
             username: self.display_name.clone().unwrap_or_default(),
             xuid: self_xuid,
+            play_fab_id: String::new(),
             platform_chat_id: String::new(),
             build_platform: PlayerListAdd::BUILD_PLATFORM_UNKNOWN,
             skin: self_skin,

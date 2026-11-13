@@ -1085,6 +1085,7 @@ impl ExecutionContext<'_> {
                     entity_id: player_info.entity_id,
                     username: String::new(),
                     xuid: String::new(),
+                    play_fab_id: String::new(),
                     platform_chat_id: String::new(),
                     build_platform: PlayerListAdd::BUILD_PLATFORM_UNKNOWN,
                     skin: Default::default(),
