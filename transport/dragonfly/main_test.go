@@ -63,7 +63,8 @@ func TestEncodePacketRetainsHeaderAndPayload(t *testing.T) {
 	if header.PacketID != packet.IDResourcePackClientResponse {
 		t.Fatalf("packet ID = %d, want %d", header.PacketID, packet.IDResourcePackClientResponse)
 	}
-	if got := reader.Bytes(); !bytes.Equal(got, []byte{3}) {
-		t.Fatalf("payload = %x, want 03", got)
+	got, err := reader.ReadByte()
+	if err != nil || got != 3 {
+		t.Fatalf("payload byte = %d, err=%v; want 3", got, err)
 	}
 }
