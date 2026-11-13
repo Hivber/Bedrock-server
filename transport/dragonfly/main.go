@@ -186,18 +186,22 @@ func serveSession(ctx context.Context, conn *minecraft.Conn, socketPath string) 
 	}
 
 	readErr := make(chan error, 1)
+	reportReadError := func(err error) {
+		select {
+		case readErr <- err:
+		default:
+		}
+		_ = ipc.Close()
+	}
 	go func() {
-		defer close(readErr)
 		for {
 			raw, err := conn.ReadBytes()
 			if err != nil {
-				readErr <- err
-				_ = ipc.Close()
+				reportReadError(err)
 				return
 			}
 			if err := writeIPC(raw); err != nil {
-				readErr <- fmt.Errorf("forward client packet: %w", err)
-				_ = ipc.Close()
+				reportReadError(fmt.Errorf("forward client packet: %w", err))
 				return
 			}
 		}
@@ -207,8 +211,7 @@ func serveSession(ctx context.Context, conn *minecraft.Conn, socketPath string) 
 			select {
 			case raw := <-controlPackets:
 				if err := writeIPC(raw); err != nil {
-					readErr <- fmt.Errorf("forward resource-pack completion: %w", err)
-					_ = ipc.Close()
+					reportReadError(fmt.Errorf("forward resource-pack completion: %w", err))
 					return
 				}
 			case <-sessionDone:
