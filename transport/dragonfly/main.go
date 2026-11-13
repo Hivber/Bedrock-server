@@ -125,17 +125,24 @@ func serveSession(ctx context.Context, conn *minecraft.Conn, socketPath string) 
 
 	readErr := make(chan error, 1)
 	go func() {
+		defer close(readErr)
 		for {
 			raw, err := conn.ReadBytes()
 			if err != nil {
 				readErr <- err
+				_ = ipc.Close()
 				return
 			}
 			if err := writeFrame(ipc, raw); err != nil {
 				readErr <- fmt.Errorf("forward client packet: %w", err)
+				_ = ipc.Close()
 				return
 			}
 		}
+	}()
+	go func() {
+		<-ctx.Done()
+		_ = ipc.Close()
 	}()
 
 	for {
@@ -201,9 +208,13 @@ func writeFrame(w io.Writer, payload []byte) error {
 	}
 	var header [4]byte
 	binary.BigEndian.PutUint32(header[:], uint32(len(payload)))
-	if _, err := w.Write(header[:]); err != nil {
+	if err := writeAll(w, header[:]); err != nil {
 		return err
 	}
+	return writeAll(w, payload)
+}
+
+func writeAll(w io.Writer, payload []byte) error {
 	for len(payload) > 0 {
 		n, err := w.Write(payload)
 		if err != nil {
