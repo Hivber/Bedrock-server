@@ -34,3 +34,16 @@ jobs:
       - name: Build transport adapter
         working-directory: transport/dragonfly
         run: go build ./...
+
+  rust-ipc:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install stable Rust
+        uses: dtolnay/rust-toolchain@stable
+      - name: Cache Cargo
+        uses: Swatinem/rust-cache@v2
+      - name: Test transport IPC contract
+        run: cargo test -p mc-rs-transport
+      - name: Check MC-RS server integration
+        run: cargo check -p mc-rs-server
