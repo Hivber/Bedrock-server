@@ -1146,6 +1146,9 @@ pub struct PlayerListAdd {
     pub entity_id: i64, // varint64 (actor unique ID)
     pub username: String,
     pub xuid: String,
+    /// Server-verified PlayFab ID (empty when unavailable), introduced in
+    /// Bedrock 1.26.60 PlayerListEntry.
+    pub play_fab_id: String,
     pub platform_chat_id: String,
     pub build_platform: i32, // i32_le
     pub skin: SerializedSkin,
@@ -1188,6 +1191,7 @@ impl PlayerList {
                 w.write_var_i64(entry.entity_id);
                 w.write_string(&entry.username);
                 w.write_string(&entry.xuid);
+                w.write_string(&entry.play_fab_id);
                 w.write_string(&entry.platform_chat_id);
                 w.write_i32_le(entry.build_platform);
                 write_serialized_skin(&mut w, &entry.skin);
@@ -1228,7 +1232,7 @@ fn skin_color_argb(color: &str) -> i32 {
 /// `skin.go`.
 fn write_serialized_skin(w: &mut ProtoWriter, skin: &SerializedSkin) {
     w.write_string(&skin.skin_id);
-    w.write_string(&skin.play_fab_id);
+    // PlayFab ID moved from SerializedSkin to PlayerListEntry in 1.26.60.
     w.write_string(&skin.skin_resource_patch);
     // Skin image data
     w.write_u32_le(skin.skin_width);
