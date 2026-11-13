@@ -21,13 +21,13 @@ import (
 	"time"
 
 	"github.com/sandertv/gophertunnel/minecraft"
-	"github.com/sandertv/gophertunnel/minecraft/protocol/login"
 	"github.com/sandertv/gophertunnel/minecraft/protocol/packet"
 )
 
 const (
 	maxIPCFrame = 32 << 20
 	dialTimeout = 10 * time.Second
+	expectedBedrockProtocol int32 = 2225
 )
 
 type sessionHello struct {
@@ -47,6 +47,10 @@ func main() {
 	flag.Parse()
 
 	logger := slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{Level: slog.LevelInfo}))
+	if got := minecraft.DefaultProtocol.ID(); got != expectedBedrockProtocol {
+		logger.Error("unexpected Gophertunnel protocol", "got", got, "want", expectedBedrockProtocol)
+		os.Exit(1)
+	}
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 
@@ -243,7 +247,3 @@ func readFrame(r io.Reader) ([]byte, error) {
 	}
 	return payload, nil
 }
-
-// Keep the login package in the module's public dependency graph: the session
-// identity fields are populated by Gophertunnel's verified login handshake.
-var _ login.IdentityData

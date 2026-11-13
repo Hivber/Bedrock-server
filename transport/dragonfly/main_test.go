@@ -2,6 +2,8 @@ package main
 
 import (
 	"bytes"
+
+	"github.com/sandertv/gophertunnel/minecraft"
 	"testing"
 )
 
@@ -29,5 +31,11 @@ func TestFrameRejectsEmptyAndOversizedPayload(t *testing.T) {
 	header[0], header[1], header[2], header[3] = 0x02, 0x00, 0x00, 0x01
 	if _, err := readFrame(bytes.NewReader(header[:])); err == nil {
 		t.Fatal("expected oversized frame to fail")
+	}
+}
+
+func TestGophertunnelProtocolIsBedrock12660(t *testing.T) {
+	if got := minecraft.DefaultProtocol.ID(); got != expectedBedrockProtocol {
+		t.Fatalf("Gophertunnel protocol = %d, want %d (Bedrock 1.26.60)", got, expectedBedrockProtocol)
 	}
 }
