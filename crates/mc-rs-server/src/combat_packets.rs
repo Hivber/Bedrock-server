@@ -44,15 +44,18 @@ pub fn death_animation(runtime_entity_id: u64) -> Vec<u8> {
 
 // ── Animate (S→C, 0x2C) ─────────────────────────────────────────────────────
 
-/// `AnimatePacket` (protocol 975) : u8 action, VarU64 actorRuntimeId, f32 LE
-/// data, optional string swingSource. Réf PMMP `AnimatePacket::encodePayload`.
+/// `AnimatePacket` (Bedrock 1.26.60 / protocol 2225):
+/// action, actor runtime ID, data, optional swing source, then hand slot.
+/// Main-hand swing uses HandSlot::Mainhand = 0.
 pub fn arm_swing(runtime_entity_id: u64) -> Vec<u8> {
     const ACTION_SWING_ARM: u8 = 1;
+    const MAIN_HAND: u8 = 0;
     let mut w = ProtoWriter::with_capacity(16);
     w.write_u8(ACTION_SWING_ARM);
     w.write_var_u64(runtime_entity_id);
     w.write_f32_le(0.0);
-    w.write_bool(false); // pas de swingSource (Optional = false)
+    w.write_bool(false); // swingSource absent
+    w.write_u8(MAIN_HAND); // required Hand field added in protocol 2225
     w.into_bytes()
 }
 
@@ -93,6 +96,11 @@ pub fn encode_set_actor_motion(runtime_entity_id: u64, motion: [f32; 3], tick: u
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn animate_arm_swing_includes_protocol_2225_hand() {
+        assert_eq!(arm_swing(1), vec![1, 1, 0, 0, 0, 0, 0, 0]);
+    }
 
     #[test]
     fn actor_event_hurt_exact_bytes() {
