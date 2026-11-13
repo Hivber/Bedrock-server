@@ -273,8 +273,10 @@ impl Connection {
             InventoryTransactionData::ReleaseItem {
                 action_type,
                 hotbar_slot,
+                hand,
                 ..
             } => {
+                debug!("[{}] ReleaseItem hand={}", self.addr, hand);
                 // PMMP `handleReleaseItemTransaction` :
                 //   action_type 0 = RELEASE (shoot bow / throw trident)
                 //   action_type 1 = CONSUME (finish eating)
@@ -295,8 +297,10 @@ impl Connection {
                 actor_runtime_id,
                 action_type,
                 hotbar_slot,
+                hand,
                 ..
             } => {
+                debug!("[{}] UseItemOnEntity hand={}", self.addr, hand);
                 if (0..=8).contains(&hotbar_slot) {
                     self.inventory.held_slot = hotbar_slot as u8;
                 }

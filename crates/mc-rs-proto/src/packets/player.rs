@@ -258,6 +258,7 @@ pub enum InventoryTransactionData {
         actor_runtime_id: u64,
         action_type: u32,
         hotbar_slot: i32,
+        hand: u8,
         item_in_hand: ItemStackWrapper,
         player_position: [f32; 3],
         click_position: [f32; 3],
@@ -266,6 +267,7 @@ pub enum InventoryTransactionData {
         actions: Vec<NetworkInventoryAction>,
         action_type: u32,
         hotbar_slot: i32,
+        hand: u8,
         item_in_hand: ItemStackWrapper,
         head_position: [f32; 3],
     },
@@ -446,6 +448,8 @@ fn decode_use_item_on_entity_transaction_data(
     let actor_runtime_id = reader.read_var_u64()?;
     let action_type = reader.read_var_i32()? as u32;
     let hotbar_slot = reader.read_var_i32()?;
+    // Bedrock 1.26.60 adds Hand before the item descriptor.
+    let hand = reader.read_u8()?;
     let item_in_hand = decode_network_item_stack_descriptor(reader)?;
     let player_position = read_vec3(reader)?;
     let click_position = read_vec3(reader)?;
@@ -454,6 +458,7 @@ fn decode_use_item_on_entity_transaction_data(
         actor_runtime_id,
         action_type,
         hotbar_slot,
+        hand,
         item_in_hand,
         player_position,
         click_position,
@@ -466,12 +471,15 @@ fn decode_release_item_transaction_data(
 ) -> Result<InventoryTransactionData, ProtoReadError> {
     let action_type = reader.read_var_i32()? as u32;
     let hotbar_slot = reader.read_var_i32()?;
+    // Bedrock 1.26.60 adds Hand before the item descriptor.
+    let hand = reader.read_u8()?;
     let item_in_hand = decode_network_item_stack_descriptor(reader)?;
     let head_position = read_vec3(reader)?;
     Ok(InventoryTransactionData::ReleaseItem {
         actions,
         action_type,
         hotbar_slot,
+        hand,
         item_in_hand,
         head_position,
     })
