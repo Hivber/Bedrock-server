@@ -110,6 +110,8 @@ func serveSession(ctx context.Context, conn *minecraft.Conn, socketPath string) 
 		return fmt.Errorf("connect Rust runtime: %w", err)
 	}
 	defer ipc.Close()
+	sessionDone := make(chan struct{})
+	defer close(sessionDone)
 
 	identity := conn.IdentityData()
 	hello, err := json.Marshal(sessionHello{
@@ -145,8 +147,11 @@ func serveSession(ctx context.Context, conn *minecraft.Conn, socketPath string) 
 		}
 	}()
 	go func() {
-		<-ctx.Done()
-		_ = ipc.Close()
+		select {
+		case <-ctx.Done():
+			_ = ipc.Close()
+		case <-sessionDone:
+		}
 	}()
 
 	for {
