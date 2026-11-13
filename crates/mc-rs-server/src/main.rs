@@ -77,6 +77,7 @@ pub mod bastion_remnant;
 #[allow(dead_code)]
 pub mod bat;
 pub mod bds_packets;
+pub mod transport_bridge;
 #[allow(dead_code)]
 pub mod beacon;
 #[allow(dead_code)]
