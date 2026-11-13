@@ -391,6 +391,58 @@ impl Connection {
         }
     }
 
+    /// Mark a Gophertunnel-authenticated connection as ready for the
+    /// MC-RS resource-pack phase. Gophertunnel already performed Bedrock login,
+    /// Xbox validation, key exchange, encryption and network compression.
+    pub fn activate_transport_session(
+        &mut self,
+        hello: &crate::transport_bridge::SessionHello,
+    ) -> Result<Vec<Vec<u8>>, crate::transport_bridge::TransportError> {
+        hello.validate()?;
+        self.display_name = Some(hello.username.clone());
+        self.uuid = uuid::Uuid::parse_str(&hello.uuid).ok();
+        self.xuid = if hello.xuid.is_empty() { None } else { Some(hello.xuid.clone()) };
+        self.state = ConnectionState::ResourcePacks;
+        Ok(self.send_resource_packs_info())
+    }
+
+    /// Handle one already-decrypted, already-decompressed packet from
+    /// Gophertunnel. Responses are converted from MC-RS batch framing back to
+    /// individual packet buffers before they are handed to the Go transport.
+    pub fn handle_transport_packet(&mut self, raw_packet: &[u8]) -> Vec<Vec<u8>> {
+        let mut reader = ProtoReader::new(raw_packet);
+        let Ok((packet_id, sender_sub, target_sub)) = codec::decode_packet_header(&mut reader) else {
+            warn!("[{}] Invalid Gophertunnel packet header", self.addr);
+            return Vec::new();
+        };
+        if sender_sub != 0 || target_sub != 0 {
+            warn!("[{}] Unsupported split-screen packet routing ({sender_sub}->{target_sub})", self.addr);
+            return Vec::new();
+        }
+
+        let mut responses = self.handle_packet(packet_id, &mut reader);
+        if self.is_in_game() {
+            responses.extend(self.tick_inventory_flush());
+        }
+
+        let mut packets = Vec::new();
+        for response in responses {
+            if response.first() != Some(&0xFE) || response.len() < 3 {
+                warn!("[{}] Dropping malformed MC-RS batch response", self.addr);
+                continue;
+            }
+            let Some(algo) = CompressionAlgorithm::from_u8(response[1]) else {
+                warn!("[{}] Unknown MC-RS batch compression byte {}", self.addr, response[1]);
+                continue;
+            };
+            match batch::decode_batch(&response[2..], algo) {
+                Ok(mut decoded) => packets.append(&mut decoded),
+                Err(error) => warn!("[{}] Could not unwrap MC-RS response batch: {}", self.addr, error),
+            }
+        }
+        packets
+    }
+
     /// Handle a raw game packet (0xFE batch) from RakNet.
     /// Returns a list of response batches to send back.
     pub fn handle_raw_batch(&mut self, raw: &[u8]) -> Vec<Vec<u8>> {

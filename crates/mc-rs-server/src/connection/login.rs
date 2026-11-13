@@ -368,7 +368,7 @@ impl Connection {
 
     // -- Resource pack helpers --
 
-    fn send_resource_packs_info(&self) -> Vec<Vec<u8>> {
+    pub(super) fn send_resource_packs_info(&self) -> Vec<Vec<u8>> {
         let packs = self.resource_packs.as_ref();
         let mut writer = mc_rs_proto::io::ProtoWriter::with_capacity(128 + 96 * packs.len());
         writer.write_bool(self.config.resource_pack_must_accept); // must_accept depuis server.toml
