@@ -178,8 +178,10 @@ mod stack_request_action_id {
     pub const CRAFT_RECIPE_OPTIONAL: u8 = 15;
     pub const CRAFT_GRINDSTONE: u8 = 16;
     pub const CRAFT_LOOM: u8 = 17;
-    pub const CRAFT_NON_IMPLEMENTED: u8 = 18;
-    pub const CRAFT_RESULTS_DEPRECATED: u8 = 19;
+    // Added by Bedrock 1.26.60 / protocol 2225.
+    pub const CRAFT_RESERVED: u8 = 18;
+    pub const CRAFT_NON_IMPLEMENTED: u8 = 19;
+    pub const CRAFT_RESULTS_DEPRECATED: u8 = 20;
 }
 
 /// Index de variante Cereal → identifiant legacy : la liste des variantes
@@ -188,7 +190,9 @@ mod stack_request_action_id {
 fn stack_request_action_from_variant(variant: u32) -> Result<u8, ProtoReadError> {
     match variant {
         0..=6 => Ok(variant as u8),
-        7..=17 => Ok(variant as u8 + 2),
+        // 1.26.60 inserts CraftReservedAction (variant index 16), shifting
+        // CraftNonImplemented and CraftResultsDeprecated one slot forward.
+        7..=18 => Ok(variant as u8 + 2),
         _ => Err(ProtoReadError::InvalidValue {
             what: "stack request action variant",
             value: i64::from(variant),
@@ -709,6 +713,7 @@ fn decode_stack_request_action(
             let _repetitions = reader.read_u8()?;
             StackRequestAction::Unknown(action_id)
         }
+        id::CRAFT_RESERVED => StackRequestAction::Unknown(action_id),
         id::CRAFT_NON_IMPLEMENTED => StackRequestAction::Unknown(action_id),
         id::CRAFT_RESULTS_DEPRECATED => {
             let item_count = read_count(reader, "craft results", MAX_LIST_LENGTH)?;
