@@ -51,7 +51,7 @@ mod protocol_2225_tests {
         .encode();
         // Last byte is the required 1.26.60 IsClientBiomeUpdate=false.
         assert_eq!(packet.last(), Some(&0));
-        assert_eq!(packet.len(), 1 + 2 + 2 + 1 + 1 + 1 + 1 + 1);
+        assert_eq!(packet.len(), 9);
     }
 }
 

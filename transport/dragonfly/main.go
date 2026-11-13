@@ -1,6 +1,6 @@
 // Command dragonfly-transport provides the Bedrock transport edge for the Rust MC-RS
 // runtime. It owns RakNet, Bedrock login authentication, encryption and compression;
-// gameplay packets are forwarded without interpretation over one Unix stream per player.
+// gameplay packets are forwarded without interpretation over one private loopback TCP stream per player.
 package main
 
 import (
