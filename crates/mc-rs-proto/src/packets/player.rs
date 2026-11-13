@@ -2213,8 +2213,8 @@ mod tests {
         }
         .encode();
         let contains = |needle: &[u8]| bytes.windows(needle.len()).any(|w| w == needle);
-        // BuildPlatform -1 en i32 little-endian, juste après les trois chaînes.
-        assert!(contains(&[0x01, b'a', 0x00, 0x00, 0xFF, 0xFF, 0xFF, 0xFF]));
+        // Username, XUID, PlayFab ID and platform chat ID precede BuildPlatform.
+        assert!(contains(&[0x01, b'a', 0x00, 0x00, 0x00, 0xFF, 0xFF, 0xFF, 0xFF]));
         // GeometryData `{}` puis version moteur, chaînes préfixées par leur longueur.
         let mut geometry = vec![2, b'{', b'}', crate::MINECRAFT_VERSION.len() as u8];
         geometry.extend_from_slice(crate::MINECRAFT_VERSION.as_bytes());
@@ -2331,7 +2331,8 @@ mod tests {
         assert_eq!(stack_request_action_from_variant(6).unwrap(), 6);
         assert_eq!(stack_request_action_from_variant(7).unwrap(), 9);
         assert_eq!(stack_request_action_from_variant(17).unwrap(), 19);
-        assert!(stack_request_action_from_variant(18).is_err());
+        assert_eq!(stack_request_action_from_variant(18).unwrap(), 20);
+        assert!(stack_request_action_from_variant(19).is_err());
     }
 }
 
