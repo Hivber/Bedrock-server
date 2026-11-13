@@ -266,9 +266,6 @@ pub struct Connection {
     pub(super) is_sprinting: bool,
     pub(super) is_sneaking: bool,
     pub(super) is_swimming: bool,
-    /// Edge-triggered guard for Bedrock 1.26.60 SwapOffhand (PAI flag 65 /
-    /// PlayerAction 38), preventing duplicate swaps while the input is held.
-    pub(super) offhand_swap_pressed: bool,
 
     // Event manager partagé (fire events pour plugins).
     pub events: Arc<Mutex<EventManager>>,
@@ -377,7 +374,6 @@ impl Connection {
             is_sprinting: false,
             is_sneaking: false,
             is_swimming: false,
-            offhand_swap_pressed: false,
             events,
             next_form_id: 1,
             pending_form: None,

@@ -6,43 +6,12 @@ use mc_rs_proto::packets::packet_id;
 use mc_rs_proto::packets::player::*;
 use mc_rs_proto::packets::world::*;
 
-use crate::inventory_manager::InvKey;
 use crate::item_entities::PendingItemEntitySpawn;
 use crate::world::block_registry::BLOCKS;
 
 use super::Connection;
 
 impl Connection {
-    /// Swap the selected hotbar item with the offhand. InventoryManager owns
-    /// stack IDs and queues both slot updates for the normal packet flush.
-    fn swap_offhand(&mut self) -> Vec<Vec<u8>> {
-        if self.offhand_swap_pressed {
-            return Vec::new();
-        }
-        self.offhand_swap_pressed = true;
-
-        let hotbar_slot = usize::from(self.inventory.held_slot.min(8));
-        let main_item = self.inventory.slots[hotbar_slot].item.clone();
-        let offhand_item = self.inventory.offhand.item.clone();
-        self.inventory_manager
-            .set_slot(&mut self.inventory, InvKey::Main, hotbar_slot, offhand_item);
-        self.inventory_manager
-            .set_slot(&mut self.inventory, InvKey::Offhand, 0, main_item);
-
-        let wrapper = ItemStackWrapper {
-            stack_id: self.inventory_manager.stack_id_of(InvKey::Main, hotbar_slot),
-            item: self.inventory.slots[hotbar_slot].item.clone(),
-        };
-        let equipment = MobEquipment::encode_item(
-            self.entity_runtime_id,
-            &wrapper,
-            self.inventory.held_slot,
-        );
-        self.broadcasts
-            .push((packet_id::MOB_EQUIPMENT, equipment.clone()));
-        vec![self.encode_compressed_packet(packet_id::MOB_EQUIPMENT, &equipment)]
-    }
-
     pub(super) fn handle_player_auth_input(&mut self, reader: &mut ProtoReader) -> Vec<Vec<u8>> {
         // PlayerAuthInput arrive à chaque tick : la première erreur de décodage
         // du processus est journalisée en warn (diagnostic de format face à un
@@ -274,18 +243,6 @@ impl Connection {
         // de input_flags sont edge-triggered par le client (START_* / STOP_*).
         // On détecte le changement → update Connection state → broadcast
         // SetActorData aux autres viewers.
-        // Bedrock 1.26.60 adds SwapOffhand at PlayerAuthInputData bit 65.
-        // The legacy PlayerAction enum is also action 38. Both packet paths
-        // share one edge-triggered guard so a held input swaps only once.
-        let swap_offhand = (pkt.input_flags >> 65) & 1 == 1;
-        if swap_offhand {
-            if !self.offhand_swap_pressed {
-                responses.extend(self.swap_offhand());
-            }
-        } else {
-            self.offhand_swap_pressed = false;
-        }
-
         let start_sprint = (pkt.input_flags >> 25) & 1 == 1;
         let stop_sprint = (pkt.input_flags >> 26) & 1 == 1;
         let start_sneak = (pkt.input_flags >> 27) & 1 == 1;
@@ -457,8 +414,6 @@ impl Connection {
         info!("[{}] PlayerAction action={}", self.addr, action);
 
         match action {
-            // Bedrock 1.26.60 PlayerActionType::SwapOffhand = 38.
-            38 => self.swap_offhand(),
             // RESPAWN (7) — client clique "respawn" après l'écran de mort.
             // Duplique le handler qu'on a déjà dans block_actions (même action
             // peut arriver par les deux voies selon version client).
