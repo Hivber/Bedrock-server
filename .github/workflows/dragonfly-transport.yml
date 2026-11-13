@@ -5,6 +5,9 @@ on:
     branches: [dragonfly-network]
     paths:
       - "transport/dragonfly/**"
+      - "crates/mc-rs-transport/**"
+      - "crates/mc-rs-server/**"
+      - "Cargo.toml"
       - ".github/workflows/dragonfly-transport.yml"
   pull_request:
     branches: [dragonfly-network]
