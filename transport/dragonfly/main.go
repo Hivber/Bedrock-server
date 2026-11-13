@@ -36,12 +36,13 @@ type sessionHello struct {
 	Username      string `json:"username"`
 	UUID          string `json:"uuid"`
 	XUID          string `json:"xuid,omitempty"`
-	RemoteAddress string `json:"remote_address"`
+	RemoteAddress string          `json:"remote_address"`
+	ClientData    json.RawMessage `json:"client_data,omitempty"`
 }
 
 func main() {
 	bind := flag.String("bind", "0.0.0.0:19132", "Bedrock RakNet listen address")
-	ipc := flag.String("ipc", "/tmp/mc-rs-transport.sock", "Rust Unix-domain socket")
+	ipc := flag.String("ipc", "127.0.0.1:19133", "Rust loopback TCP transport endpoint")
 	authDisabled := flag.Bool("auth-disabled", false, "disable Xbox Live authentication (development only)")
 	maxPlayers := flag.Int("max-players", 20, "maximum concurrent Bedrock sessions")
 	flag.Parse()
@@ -114,6 +115,10 @@ func serveSession(ctx context.Context, conn *minecraft.Conn, socketPath string) 
 	defer close(sessionDone)
 
 	identity := conn.IdentityData()
+	clientData, err := json.Marshal(conn.ClientData())
+	if err != nil {
+		return fmt.Errorf("encode client data: %w", err)
+	}
 	hello, err := json.Marshal(sessionHello{
 		Type:          "open",
 		Protocol:      conn.Proto().ID(),
@@ -121,6 +126,7 @@ func serveSession(ctx context.Context, conn *minecraft.Conn, socketPath string) 
 		UUID:          identity.Identity,
 		XUID:          identity.XUID,
 		RemoteAddress: conn.RemoteAddr().String(),
+		ClientData:    clientData,
 	})
 	if err != nil {
 		return fmt.Errorf("encode session metadata: %w", err)
@@ -177,7 +183,7 @@ func dialRust(ctx context.Context, path string) (net.Conn, error) {
 	deadline := time.Now().Add(dialTimeout)
 	var last error
 	for {
-		conn, err := (&net.Dialer{Timeout: 500 * time.Millisecond}).DialContext(ctx, "unix", path)
+		conn, err := (&net.Dialer{Timeout: 500 * time.Millisecond}).DialContext(ctx, "tcp", path)
 		if err == nil {
 			return conn, nil
 		}

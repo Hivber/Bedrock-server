@@ -19,7 +19,7 @@ use mc_rs_proto::packets::world::{
     SetSpawnPosition,
 };
 use mc_rs_raknet::protocol::datagram::Reliability;
-use mc_rs_raknet::{RakNetPeer, RakNetServer};
+use crate::transport_bridge::{RakNetPeer, RakNetServer};
 use tracing::info;
 
 use crate::connection::Connection;

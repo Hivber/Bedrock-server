@@ -19,6 +19,8 @@ pub struct SessionHello {
     pub uuid: String,
     #[serde(default)]
     pub xuid: String,
+    #[serde(default)]
+    pub client_data: Option<serde_json::Value>,
     pub remote_address: String,
 }
 

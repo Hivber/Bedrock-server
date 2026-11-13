@@ -391,9 +391,9 @@ impl Connection {
         }
     }
 
-    /// Mark a Gophertunnel-authenticated connection as ready for the
-    /// MC-RS resource-pack phase. Gophertunnel already performed Bedrock login,
-    /// Xbox validation, key exchange, encryption and network compression.
+    /// Activate a Gophertunnel-authenticated player. Login identity, key
+    /// exchange, encryption and network compression have already been handled
+    /// by Go; MC-RS resumes at PlayStatus/ResourcePacks and owns all gameplay.
     pub fn activate_transport_session(
         &mut self,
         hello: &crate::transport_bridge::SessionHello,
@@ -402,8 +402,57 @@ impl Connection {
         self.display_name = Some(hello.username.clone());
         self.uuid = uuid::Uuid::parse_str(&hello.uuid).ok();
         self.xuid = if hello.xuid.is_empty() { None } else { Some(hello.xuid.clone()) };
+        if let Some(client_data) = hello.client_data.as_ref() {
+            self.skin = crate::skins::Skin::from_client_data(client_data);
+        }
+
+        // Reuse MC-RS's existing persistent player restoration; the native
+        // Login packet is consumed by Gophertunnel on this transport path.
+        if let Some(ref xuid) = self.xuid {
+            if let Some(save) = crate::player_data::load_player(
+                &crate::config::world_dir(&self.config.world_name),
+                xuid,
+            ) {
+                self.position = [
+                    save.position[0] as f32,
+                    save.position[1] as f32,
+                    save.position[2] as f32,
+                ];
+                self.yaw = save.rotation[0];
+                self.pitch = save.rotation[1];
+                self.gamemode = save.gamemode;
+                if let Some(spawn_position) = save.spawn_position {
+                    self.spawn_position = [
+                        spawn_position[0] as f32,
+                        spawn_position[1] as f32,
+                        spawn_position[2] as f32,
+                    ];
+                }
+                self.inventory = save.inventory.into_runtime();
+                self.current_dimension = save.dimension;
+                self.chunk_cache = self.worlds.arc(save.dimension);
+                info!(
+                    "[{}] Restored position: {:.1}, {:.1}, {:.1} (gamemode={}, dim={})",
+                    self.addr,
+                    self.position[0],
+                    self.position[1],
+                    self.position[2],
+                    self.gamemode,
+                    self.current_dimension,
+                );
+            }
+        }
+
         self.state = ConnectionState::ResourcePacks;
-        Ok(self.send_resource_packs_info())
+        let login_success = mc_rs_proto::packets::login::PlayStatus {
+            status: mc_rs_proto::packets::login::PlayStatusType::LoginSuccess,
+        };
+        let mut initial_packets = vec![self.encode_compressed_packet(
+            packet_id::PLAY_STATUS,
+            &login_success.encode(),
+        )];
+        initial_packets.extend(self.send_resource_packs_info());
+        Ok(initial_packets)
     }
 
     /// Handle one already-decrypted, already-decompressed packet from

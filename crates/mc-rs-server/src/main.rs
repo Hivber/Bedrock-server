@@ -1056,10 +1056,9 @@ use std::sync::{Arc, Mutex};
 use mc_rs_crypto::ecdh::ServerKeyPair;
 use mc_rs_proto::packets::packet_id;
 use mc_rs_proto::packets::player::*;
-use mc_rs_raknet::motd::Motd;
 use mc_rs_raknet::protocol::datagram::Reliability;
 use mc_rs_raknet::session::SessionEvent;
-use mc_rs_raknet::RakNetServer;
+use crate::transport_bridge::RakNetServer;
 use tokio::io::{AsyncBufReadExt, BufReader};
 use tokio::time::{interval, Duration, MissedTickBehavior};
 use tracing::{error, info, warn};
@@ -1134,36 +1133,23 @@ async fn main() {
     let resource_packs = Arc::new(packs);
     info!("Loaded {} resource pack(s)", resource_packs.len());
 
-    // Generate server GUID
-    let server_guid: i64 = rand::random();
-
-    // Build MOTD
-    let motd = Motd {
-        name: config.server.motd.clone(),
-        protocol_version: mc_rs_proto::CURRENT_PROTOCOL as u32,
-        version_string: mc_rs_proto::MINECRAFT_VERSION.to_string(),
-        online_players: 0,
-        max_players: config.server.max_players,
-        server_guid,
-        world_name: config.world.name.clone(),
-        gamemode: config.gameplay.gamemode_display().to_string(),
-    };
-
-    // Bind RakNet server
-    let addr: SocketAddr = format!("0.0.0.0:{}", config.server.port).parse().unwrap();
-    let mut raknet = match RakNetServer::bind(addr, motd, server_guid).await {
-        Ok(s) => s,
-        Err(e) => {
-            error!("Failed to bind: {}", e);
+    // Bind the private Dragonfly↔Rust IPC. Only Gophertunnel opens the
+    // public Bedrock RakNet socket; the Rust runtime keeps all gameplay.
+    let mut raknet = match RakNetServer::bind().await {
+        Ok(server) => server,
+        Err(error) => {
+            error!("Failed to bind Dragonfly transport IPC: {}", error);
             return;
         }
     };
-
-    info!("Server listening on {} — waiting for connections", addr);
+    info!(
+        "MC-RS gameplay runtime ready; Dragonfly transport should listen on UDP {}",
+        config.server.port
+    );
 
     // Connection tracking
     let mut connections: HashMap<SocketAddr, Connection> = HashMap::new();
-    let mut peers: HashMap<SocketAddr, mc_rs_raknet::RakNetPeer> = HashMap::new();
+    let mut peers: HashMap<SocketAddr, crate::transport_bridge::RakNetPeer> = HashMap::new();
     let mut registry = PlayerRegistry::new();
     let mut item_entities = ItemEntityManager::new();
     let mut mob_entities = MobEntityManager::new();
@@ -1545,7 +1531,7 @@ async fn main() {
                 while let Some(peer) = raknet.accept() {
                     let addr = peer.addr;
                     info!("New peer: {}", addr);
-                    let conn = Connection::new(
+                    let mut conn = Connection::new(
                         addr,
                         Arc::clone(&server_keypair),
                         worlds.clone(),
@@ -1558,7 +1544,25 @@ async fn main() {
                         Arc::clone(&event_manager),
                         Arc::clone(&resource_packs),
                     );
+                    let initial_packets = match conn.activate_transport_session(&peer.hello) {
+                        Ok(packets) => packets
+                            .into_iter()
+                            .map(|packet| conn.prepare_for_send(packet))
+                            .collect::<Vec<_>>(),
+                        Err(error) => {
+                            warn!("[{}] Rejecting invalid Dragonfly session: {}", addr, error);
+                            continue;
+                        }
+                    };
                     connections.insert(addr, conn);
+                    for packet in initial_packets {
+                        raknet.send_to_session(
+                            &addr,
+                            packet,
+                            Reliability::ReliableOrdered,
+                            true,
+                        );
+                    }
                     peers.insert(addr, peer);
                 }
 
@@ -3446,7 +3450,7 @@ fn scan_for_player(
 
 #[allow(clippy::too_many_arguments)]
 fn process_peer_events(
-    peers: &mut HashMap<SocketAddr, mc_rs_raknet::RakNetPeer>,
+    peers: &mut HashMap<SocketAddr, crate::transport_bridge::RakNetPeer>,
     connections: &mut HashMap<SocketAddr, Connection>,
     raknet: &mut RakNetServer,
     registry: &mut PlayerRegistry,
