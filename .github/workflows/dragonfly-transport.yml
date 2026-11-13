@@ -6,6 +6,8 @@ on:
     paths:
       - "transport/dragonfly/**"
       - "crates/mc-rs-transport/**"
+      - "crates/mc-rs-proto/**"
+      - "crates/mc-rs-raknet/**"
       - "crates/mc-rs-server/**"
       - "Cargo.toml"
       - ".github/workflows/dragonfly-transport.yml"

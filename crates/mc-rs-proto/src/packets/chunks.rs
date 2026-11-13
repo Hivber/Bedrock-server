@@ -27,7 +27,31 @@ impl LevelChunk {
         w.write_bool(self.cache_enabled);
         w.write_var_u32(0);
         w.write_byte_array(&self.payload);
+        // Bedrock 1.26.60 / protocol 2225 added IsClientBiomeUpdate after the
+        // serialized chunk payload. MC-RS sends no client-side biome override.
+        w.write_bool(false);
         w.into_bytes()
+    }
+}
+
+#[cfg(test)]
+mod protocol_2225_tests {
+    use super::*;
+
+    #[test]
+    fn level_chunk_appends_client_biome_update_flag() {
+        let packet = LevelChunk {
+            chunk_x: 1,
+            chunk_z: -2,
+            dimension_id: 0,
+            sub_chunk_count: 0,
+            cache_enabled: false,
+            payload: Vec::new(),
+        }
+        .encode();
+        // Last byte is the required 1.26.60 IsClientBiomeUpdate=false.
+        assert_eq!(packet.last(), Some(&0));
+        assert_eq!(packet.len(), 1 + 2 + 2 + 1 + 1 + 1 + 1 + 1);
     }
 }
 

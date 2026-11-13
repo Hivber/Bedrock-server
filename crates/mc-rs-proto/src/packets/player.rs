@@ -1338,6 +1338,9 @@ impl AddPlayer {
         w.write_f32_le(0.0); // walk speed
                              // Entity links (none)
         w.write_var_u32(0);
+        // Protocol 2225 adds an optional Passenger Block Data field before
+        // Device ID. No player is initially attached to a block.
+        w.write_bool(false);
         // Device ID + OS
         w.write_string(""); // device_id
                             // Build Platform : même énumération que dans PlayerList.
@@ -1411,6 +1414,8 @@ impl AddActor {
         w.write_var_u32(0); // synced int properties
         w.write_var_u32(0); // synced float properties
         w.write_var_u32(0); // actor links
+        // Protocol 2225 AddActorPacket adds optional Passenger Block Data.
+        w.write_bool(false);
         w.into_bytes()
     }
 }
@@ -2078,6 +2083,44 @@ fn minimal_item_extra_data(_item_id: i32) -> Vec<u8> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn add_player_and_add_actor_include_2225_absent_passenger_data() {
+        let add_player = AddPlayer {
+            uuid: [0; 16],
+            username: "test".into(),
+            runtime_entity_id: 1,
+            platform_chat_id: String::new(),
+            position: [0.0; 3],
+            velocity: [0.0; 3],
+            pitch: 0.0,
+            yaw: 0.0,
+            head_yaw: 0.0,
+            gamemode: 0,
+            entity_unique_id: 1,
+            permission_level: 1,
+            command_permission: 0,
+        }
+        .encode();
+        // Tail: links count, PassengerBlockData absent, empty DeviceID, platform.
+        assert!(add_player.ends_with(&[0, 0, 0, 0, 0, 0, 0xFF, 0xFF, 0xFF, 0xFF]));
+
+        let add_actor = AddActor {
+            entity_unique_id: 1,
+            entity_runtime_id: 1,
+            actor_type: "minecraft:pig".into(),
+            position: [0.0; 3],
+            velocity: [0.0; 3],
+            pitch: 0.0,
+            yaw: 0.0,
+            head_yaw: 0.0,
+            body_yaw: 0.0,
+            attributes: Vec::new(),
+            metadata: Vec::new(),
+        }
+        .encode();
+        assert!(add_actor.ends_with(&[0, 0, 0, 0, 0]));
+    }
 
     #[test]
     fn item_descriptor_round_trips_without_variant_index() {
