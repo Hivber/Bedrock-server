@@ -1,0 +1,36 @@
+name: Dragonfly transport adapter
+
+on:
+  push:
+    branches: [dragonfly-network]
+    paths:
+      - "transport/dragonfly/**"
+      - ".github/workflows/dragonfly-transport.yml"
+  pull_request:
+    branches: [dragonfly-network]
+    paths:
+      - "transport/dragonfly/**"
+      - ".github/workflows/dragonfly-transport.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  go-transport:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.26.x"
+          cache-dependency-path: transport/dragonfly/go.mod
+      - name: Download dependencies
+        working-directory: transport/dragonfly
+        run: go mod tidy
+      - name: Test transport framing
+        working-directory: transport/dragonfly
+        run: go test ./...
+      - name: Build transport adapter
+        working-directory: transport/dragonfly
+        run: go build ./...
