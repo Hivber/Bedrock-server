@@ -713,7 +713,12 @@ fn decode_stack_request_action(
             let _repetitions = reader.read_u8()?;
             StackRequestAction::Unknown(action_id)
         }
-        id::CRAFT_RESERVED => StackRequestAction::Unknown(action_id),
+        id::CRAFT_RESERVED => {
+            // Bedrock 1.26.60 CraftReserved carries a string ID and craft count.
+            let _reserved_id = reader.read_string()?;
+            let _times_crafted = reader.read_u8()?;
+            StackRequestAction::Unknown(action_id)
+        },
         id::CRAFT_NON_IMPLEMENTED => StackRequestAction::Unknown(action_id),
         id::CRAFT_RESULTS_DEPRECATED => {
             let item_count = read_count(reader, "craft results", MAX_LIST_LENGTH)?;
@@ -2294,7 +2299,7 @@ mod tests {
         w.write_bool(false); // pas d'ItemStackRequest
         w.write_bool(true); // actions de bloc
         w.write_var_u32(1);
-        w.write_var_i32(18); // PREDICT_DESTROY_BLOCK
+        w.write_var_i32(26); // PREDICT_DESTROY_BLOCK (1.26.60 PlayerActionType)
         w.write_var_i32(1);
         w.write_var_i32(64);
         w.write_var_i32(-3);
@@ -2309,6 +2314,17 @@ mod tests {
         assert_eq!(pai.input_flags, (1u128 << 25) | (1u128 << 65));
         assert_eq!(pai.block_actions.len(), 1);
         assert_eq!(pai.block_actions[0].position, [1, 64, -3]);
+    }
+
+    #[test]
+    fn craft_reserved_action_consumes_protocol_2225_payload() {
+        let mut writer = ProtoWriter::new();
+        writer.write_var_u32(18); // Cereal variant index
+        writer.write_u8(stack_request_action_id::CRAFT_RESERVED);
+        writer.write_string("reserved_future_action");
+        writer.write_u8(2);
+        let action = decode_stack_request_action(&mut ProtoReader::new(&writer.into_bytes())).unwrap();
+        assert!(matches!(action, StackRequestAction::Unknown(stack_request_action_id::CRAFT_RESERVED)));
     }
 
     #[test]
